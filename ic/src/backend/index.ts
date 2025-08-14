@@ -195,7 +195,7 @@ app.get('/canister-address', async (_req, res) => {
         ethers.getDefaultProvider('https://sepolia.base.org')
     );
 
-    res.send(await wallet.getAddress());
+    res.json({address: await wallet.getAddress()});
 });
 
 app.get(

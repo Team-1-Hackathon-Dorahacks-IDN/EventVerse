@@ -1,5 +1,7 @@
+import os
 import requests
 import json
+from dotenv import load_dotenv
 from uagents_core.contrib.protocols.chat import (
     chat_protocol_spec,
     ChatMessage,
@@ -10,9 +12,9 @@ from uagents_core.contrib.protocols.chat import (
 from uagents import Agent, Context, Protocol, Model
 from datetime import datetime, timezone, timedelta
 from uuid import uuid4
-
+load_dotenv()
 # ASI1 API settings
-ASI1_API_KEY = ""  # Replace with your ASI1 key
+ASI1_API_KEY = os.getenv("ASI1_API_KEY") # Replace with your ASI1 key
 ASI1_BASE_URL = "https://api.asi1.ai/v1"
 ASI1_HEADERS = {
     "Authorization": f"Bearer {ASI1_API_KEY}",
@@ -27,8 +29,28 @@ HEADERS = {
     "Content-Type": "application/json"
 }
 
+HEADERSUPDATE = {
+    "Host": f"{CANISTER_ID}.localhost",
+    "Content-Type": "application/json",
+    'X-Ic-Force-Update': 'true'
+}
+
 # Function definitions for ASI1 function calling
 tools = [
+      {
+        "type": "function",
+        "function": {
+            "name": "canister_address",
+            "description": "Returns the address of this canister",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": False
+            },
+            "strict": True
+        }
+    },
     {
         "type": "function",
         "function": {
@@ -110,6 +132,9 @@ async def call_icp_endpoint(func_name: str, args: dict):
     if func_name == "get_current_fee_percentiles":
         url = f"{BASE_URL}/get-current-fee-percentiles"
         response = requests.post(url, headers=HEADERS, json={})
+    elif func_name == "canister_address":
+        url = f"{BASE_URL}/canister-address"
+        response = requests.get(url, headers=HEADERSUPDATE, json={})
     elif func_name == "get_balance":
         url = f"{BASE_URL}/get-balance"
         response = requests.post(url, headers=HEADERS, json={"address": args["address"]})
