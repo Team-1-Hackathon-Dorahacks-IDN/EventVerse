@@ -38,127 +38,6 @@ app.get("/", async (req: Request, res) => {
         app.get('/post-upgrade-called', (_req, res) => {
             res.json(globalThis._azlePostUpgradeCalled);
         });
-app.get('/headers-array', (req, res) => {
-    res.setHeader('X-Azle-Response-Key-0', 'X-Azle-Response-Value-0');
-    res.setHeader('X-Azle-Response-Key-1', 'X-Azle-Response-Value-1');
-    res.setHeader('X-Azle-Response-Key-2', 'X-Azle-Response-Value-2');
-
-    res.json({
-        whoami: msgCaller().toString(),
-        value: req.headers
-    });
-});
-
-app.get('/headers-object', (req, res) => {
-    res.setHeader('X-Azle-Response-Key-0', 'X-Azle-Response-Value-0');
-    res.setHeader('X-Azle-Response-Key-1', 'X-Azle-Response-Value-1');
-    res.setHeader('X-Azle-Response-Key-2', 'X-Azle-Response-Value-2');
-
-    res.json({
-        whoami: msgCaller().toString(),
-        value: req.headers
-    });
-});
-
-app.post('/body-uint8array', (req, res) => {
-    res.setHeader('X-Azle-Response-Key-0', 'X-Azle-Response-Value-0');
-    res.setHeader('X-Azle-Response-Key-1', 'X-Azle-Response-Value-1');
-    res.setHeader('X-Azle-Response-Key-2', 'X-Azle-Response-Value-2');
-
-    res.json({
-        whoami: msgCaller().toString(),
-        value: req.body
-    });
-});
-
-app.put('/body-string', (req, res) => {
-    res.setHeader('X-Azle-Response-Key-0', 'X-Azle-Response-Value-0');
-    res.setHeader('X-Azle-Response-Key-1', 'X-Azle-Response-Value-1');
-    res.setHeader('X-Azle-Response-Key-2', 'X-Azle-Response-Value-2');
-
-    res.json({
-        whoami: msgCaller().toString(),
-        value: req.body
-    });
-});
-
-app.patch('/body-array-buffer', (req, res) => {
-    res.setHeader('X-Azle-Response-Key-0', 'X-Azle-Response-Value-0');
-    res.setHeader('X-Azle-Response-Key-1', 'X-Azle-Response-Value-1');
-    res.setHeader('X-Azle-Response-Key-2', 'X-Azle-Response-Value-2');
-
-    res.json({
-        whoami: msgCaller().toString(),
-        value: req.body
-    });
-});
-
-app.delete('/body-blob', (req, res) => {
-    res.setHeader('X-Azle-Response-Key-0', 'X-Azle-Response-Value-0');
-    res.setHeader('X-Azle-Response-Key-1', 'X-Azle-Response-Value-1');
-    res.setHeader('X-Azle-Response-Key-2', 'X-Azle-Response-Value-2');
-
-    res.json({
-        whoami: msgCaller().toString(),
-        value: req.body
-    });
-});
-
-app.post('/body-data-view', (req, res) => {
-    res.setHeader('X-Azle-Response-Key-0', 'X-Azle-Response-Value-0');
-    res.setHeader('X-Azle-Response-Key-1', 'X-Azle-Response-Value-1');
-    res.setHeader('X-Azle-Response-Key-2', 'X-Azle-Response-Value-2');
-
-    res.json({
-        whoami: msgCaller().toString(),
-        value: req.body
-    });
-});
-
-app.get('/url-query-params-get', (req, res) => {
-    res.setHeader('X-Azle-Response-Key-0', 'X-Azle-Response-Value-0');
-    res.setHeader('X-Azle-Response-Key-1', 'X-Azle-Response-Value-1');
-    res.setHeader('X-Azle-Response-Key-2', 'X-Azle-Response-Value-2');
-
-    res.json({
-        whoami: msgCaller().toString(),
-        value: req.query
-    });
-});
-
-app.post('/url-query-params-post', (req, res) => {
-    res.setHeader('X-Azle-Response-Key-0', 'X-Azle-Response-Value-0');
-    res.setHeader('X-Azle-Response-Key-1', 'X-Azle-Response-Value-1');
-    res.setHeader('X-Azle-Response-Key-2', 'X-Azle-Response-Value-2');
-
-    res.json({
-        whoami: msgCaller().toString(),
-        value: req.query
-    });
-});
-
-app.get('/not-authorized-get', (_req, res) => {
-    res.status(401).send('Not Authorized');
-});
-
-app.post('/not-authorized-post', (_req, res) => {
-    res.status(401).send('Not Authorized');
-});
-
-app.head('/head', (_req, res) => {
-    res.setHeader('X-Azle-Response-Key-0', 'X-Azle-Response-Value-0');
-    res.setHeader('X-Azle-Response-Key-1', 'X-Azle-Response-Value-1');
-    res.setHeader('X-Azle-Response-Key-2', 'X-Azle-Response-Value-2');
-    res.end();
-});
-
-app.options('/options', (_req, res) => {
-    res.setHeader(
-        'X-Azle-Response-Key-Options',
-        'X-Azle-Response-Value-Options'
-    );
-    res.end();
-});
 
 /// Dummy: Returns the balance of a given Bitcoin address.
 app.post("/get-balance", async (req: Request, res) => {
@@ -277,7 +156,7 @@ app.get('/payment', (req, res) => {
     const valueInEth = "0.01";
 
     // Ethereum payment URI
-    const paymentLink = `http://wykia-ph777-77774-qaama-cai.raw.localhost:4943/payment`;
+    const paymentLink = `http://wwifi-ux777-77774-qaana-cai.raw.localhost:4943/payment`;
 
     res.json({
         success: true,
@@ -289,7 +168,7 @@ app.post(
     '/transfer-from-canister',
     async (req: Request<any, any, { to: string; value: string }>, res) => {
       
-      try {
+  
             const wallet = new ThresholdWallet(
                 {
                     derivationPath: [canisterSelf().toUint8Array()]
@@ -308,53 +187,42 @@ app.post(
             });
 
             res.send(`transaction sent with hash: ${tx.hash}`);
-        } catch (error: any) {
-            res.status(500).json({
-                success: false,
-                error: {
-                    code: error.code || 'UNKNOWN_ERROR',
-                    message: error.message,
-                    details: error.info || null
-                }
-            });
-        }
+       
     }
 );
 app.post(
-  '/transfer-from-caller',
+  '/payout',
   async (req: Request<any, any, { to: string; value: string }>, res) => {
 
-    try {
-         // Kalau memang mau set cycle untuk outgoing HTTP
-      
-        ic.setOutgoingHttpOptions({ cycles: 26_153_846_153n });
-     
-      const wallet = new ThresholdWallet(
+   try{
+          ic.setOutgoingHttpOptions({
+                    cycles: 200_850_523_200n
+                });
+             
+    const wallet = new ThresholdWallet(
         {
-          derivationPath: [msgCaller().toUint8Array()]
+            derivationPath: [msgCaller().toUint8Array()],
+            keyId:{
+              curve:'secp256k1',
+              name:'dfx_test_key' 
+            }
         },
         ethers.getDefaultProvider('https://sepolia.base.org')
-      );
+    );
    
-//     const { to, value } = req.body;
-
-// if (!to) {
-//   throw new Error('Missing "to" field'); // jika alamat tujuan kosong
-// }
-
-// if (!value) {
-//   throw new Error('Missing "value" field'); // jika nilai pembayaran kosong
-// }
+      const to = req.body.to;
+            const value = ethers.parseEther(req.body.value);
+            const gasLimit = 21_000n;
   
       const tx = await wallet.sendTransaction({
-        to: "0x9E6965ed001801C462Ca17Fd73DE8E7dde09f75c",
-        value: ethers.parseEther("0.01"), // must be string
-        gasLimit: 21_000n
+             to,
+                value,
+                gasLimit
       });
 
-        res.json({ message: 'Transaction sent' });
-    } catch (error: any) {
-      console.error('Transaction failed:', error);
+     res.json({ message: 'Transaction sent', txHash: tx.hash });
+    }catch(error:any){
+       console.error('Transaction failed:', error);
       res.status(500).json({
         error: 'Failed to send transaction',
         details: error.message || 'Unknown error',

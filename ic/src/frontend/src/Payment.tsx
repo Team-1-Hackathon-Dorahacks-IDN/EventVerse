@@ -51,7 +51,7 @@ function Payment() {
     try {
       const agent = new HttpAgent({ identity: id });
       await agent.fetchRootKey(); // hapus kalau di mainnet
-      const actor = createActor("x3gbg-37777-77774-qaakq-cai", { agent });
+      const actor = createActor("w7lou-c7777-77774-qaamq-cai", { agent });
 
       // Ambil caller address
       const callerRes = await actor.http_request_update({
@@ -80,7 +80,7 @@ function Payment() {
       setCallerBalance("🔄 Mengambil saldo...");
       const agent = new HttpAgent({ identity: id });
       await agent.fetchRootKey();
-      const actor = createActor("x3gbg-37777-77774-qaakq-cai", { agent });
+      const actor = createActor("w7lou-c7777-77774-qaamq-cai", { agent });
 
       const res = await actor.http_request_update({
         url: `/address-balance?address=${address}`,
@@ -107,7 +107,7 @@ function Payment() {
     try {
       const agent = new HttpAgent({ identity: id });
       await agent.fetchRootKey(); // hapus kalau di mainnet
-      const actor = createActor("x3gbg-37777-77774-qaakq-cai", { agent });
+      const actor = createActor("w7lou-c7777-77774-qaamq-cai", { agent });
 
       // Ambil canister address
       const canisterRes = await actor.http_request_update({
@@ -135,7 +135,7 @@ function Payment() {
       setCanisterBalance("🔄 Mengambil saldo...");
       const agent = new HttpAgent({ identity: id });
       await agent.fetchRootKey();
-      const actor = createActor("x3gbg-37777-77774-qaakq-cai", { agent });
+      const actor = createActor("w7lou-c7777-77774-qaamq-cai", { agent });
 
       const res = await actor.http_request_update({
         url: `/address-balance?address=${address}`,
@@ -183,7 +183,7 @@ function Payment() {
 
       const agent = new HttpAgent({ identity });
       await agent.fetchRootKey(); // hapus kalau di mainnet
-      const actor = createActor("x3gbg-37777-77774-qaakq-cai", { agent });
+      const actor = createActor("w7lou-c7777-77774-qaamq-cai", { agent });
 
       // Prepare JSON payload
       const payload = JSON.stringify({
@@ -195,7 +195,7 @@ function Payment() {
       const payloadBytes = new TextEncoder().encode(payload);
       console.log(payloadBytes);
       const res = await actor.http_request_update({
-        url: "/transfer-from-caller",
+        url: "/payo",
         method: "POST",
         body: payloadBytes,
         headers: [["Content-Type", "application/json"]],
