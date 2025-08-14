@@ -8,6 +8,7 @@ import { Database } from 'sql.js/dist/sql-asm.js';
 import { init,Principal } from 'azle/experimental';
 import { getRouter as getRouterPosts } from './entities/posts/router';
 import { getRouter as getRouterUsers } from './entities/users/router';
+import cors from 'cors';
 // Dummy values instead of real Bitcoin interactions
 const NETWORK: bitcoin_network = { testnet: null };
 const DERIVATION_PATH: Uint8Array[] = [];
@@ -20,6 +21,7 @@ export let db: Database;
 export default Server(()=>{
 const app = express();
 app.use(express.json());
+
   app.use('/users', getRouterUsers());
         app.use('/posts', getRouterPosts());
 /// Dummy: Returns the balance of a given Bitcoin address.
@@ -170,6 +172,9 @@ app.post("/get-balance", async (req: Request, res) => {
 });
 
 app.get('/caller-address', async (_req:Request, res) => {
+   ic.setOutgoingHttpOptions({
+                    cycles: 200_850_523_200n
+                });
     const wallet = new ThresholdWallet(
         {
             derivationPath: [msgCaller().toUint8Array()]
@@ -178,7 +183,7 @@ app.get('/caller-address', async (_req:Request, res) => {
     );
 
 
-    res.send(await wallet.getAddress());
+  res.json({address: await wallet.getAddress()});
 });
 app.get(
     '/keccak256',
@@ -188,6 +193,9 @@ app.get(
 );
 
 app.get('/canister-address', async (_req, res) => {
+    ic.setOutgoingHttpOptions({
+                    cycles: 200_850_523_200n
+                });
     const wallet = new ThresholdWallet(
         {
             derivationPath: [canisterSelf().toUint8Array()]
@@ -202,13 +210,12 @@ app.get(
     '/address-balance',
     async (req: Request<any, any, any, { address: string }>, res) => {
         ic.setOutgoingHttpOptions({
-                    cycles: 20_850_523_200n
+                    cycles: 400_850_523_200n
                 });
         const balance = await ethers
             .getDefaultProvider('https://sepolia.base.org')
             .getBalance(req.query.address);
-
-        res.send(jsonStringify(balance));
+res.json({ balance: balance.toString() });
     }
 );
 app.get('/whoami', (req, res) => {
@@ -281,7 +288,8 @@ app.get('/payment', (req, res) => {
 app.post(
     '/transfer-from-canister',
     async (req: Request<any, any, { to: string; value: string }>, res) => {
-        try {
+      
+      try {
             const wallet = new ThresholdWallet(
                 {
                     derivationPath: [canisterSelf().toUint8Array()]
@@ -312,6 +320,49 @@ app.post(
         }
     }
 );
+app.post(
+  '/transfer-from-caller',
+  async (req: Request<any, any, { to: string; value: string }>, res) => {
+
+    try {
+         // Kalau memang mau set cycle untuk outgoing HTTP
+      
+        ic.setOutgoingHttpOptions({ cycles: 26_153_846_153n });
+     
+      const wallet = new ThresholdWallet(
+        {
+          derivationPath: [msgCaller().toUint8Array()]
+        },
+        ethers.getDefaultProvider('https://sepolia.base.org')
+      );
+   
+//     const { to, value } = req.body;
+
+// if (!to) {
+//   throw new Error('Missing "to" field'); // jika alamat tujuan kosong
+// }
+
+// if (!value) {
+//   throw new Error('Missing "value" field'); // jika nilai pembayaran kosong
+// }
+  
+      const tx = await wallet.sendTransaction({
+        to: "0x9E6965ed001801C462Ca17Fd73DE8E7dde09f75c",
+        value: ethers.parseEther("0.01"), // must be string
+        gasLimit: 21_000n
+      });
+
+        res.json({ message: 'Transaction sent' });
+    } catch (error: any) {
+      console.error('Transaction failed:', error);
+      res.status(500).json({
+        error: 'Failed to send transaction',
+        details: error.message || 'Unknown error',
+      });
+    }
+  }
+);
+
 /// Dummy: Returns the UTXOs of a given Bitcoin address.
 app.post("/get-utxos", async (req: Request, res) => {
   const { address } = req.body;

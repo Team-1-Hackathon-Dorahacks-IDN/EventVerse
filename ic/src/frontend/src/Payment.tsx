@@ -8,17 +8,25 @@ import fetch from "isomorphic-fetch";
 
 function Payment() {
   const [identity, setIdentity] = useState<Identity | null>(null);
-  const [whoami, setWhoami] = useState("");
-
+  const [callerAddress, setCallerAddress] = useState("");
+  const [callerBalance, setCallerBalance] = useState("");
+  const [amount, setAmount] = useState("0.01");
+  const [canisterBalance, setCanisterBalance] = useState("");
+  const [paymentStatus, setPaymentStatus] = useState("");
+  const [canisterAddress, setCanisterAddress] = useState("");
+  const [airdropStatus, setAirdropStatus] = useState("");
   useEffect(() => {
     authenticate();
   }, []);
 
+  // ====== Authentication ======
   async function authenticate() {
     const authClient = await AuthClient.create();
     const isAuthenticated = await authClient.isAuthenticated();
     if (isAuthenticated) {
       setIdentity(authClient.getIdentity());
+      await fetchCallerAndBalance(authClient.getIdentity());
+      await fetchCanisterAndBalance(authClient.getIdentity());
     } else {
       await handleIsNotAuthenticated(authClient);
     }
@@ -35,123 +43,305 @@ function Payment() {
     });
     const id = authClient.getIdentity();
     setIdentity(id);
+    await fetchCallerAndBalance(id);
+  }
 
-    const agent = new HttpAgent({ identity: id });
-    await agent.fetchRootKey();
-    const whoamiActor = createActor("x3gbg-37777-77774-qaakq-cai", { agent });
-    const principal = await whoamiActor.whoami();
-    console.log("✅ Authenticated as:", principal.toString());
-    const args1 = {
-      url: "/canister-address",
-      method: "GET",
-      body: new Uint8Array([]),
-      headers: [],
-    };
-    const res = await whoamiActor.http_request_update(args1);
-
-    const address = new TextDecoder().decode(new Uint8Array(res.body));
-    console.log("Canister address:", address);
-    const args = {
-      url: "/caller-address",
-      method: "GET",
-      body: new Uint8Array([]),
-      headers: [],
-    };
+  // ====== Fetch Caller & Balance ======
+  async function fetchCallerAndBalance(id: Identity) {
     try {
-      const res = await whoamiActor.http_request_update(args);
+      const agent = new HttpAgent({ identity: id });
+      await agent.fetchRootKey(); // hapus kalau di mainnet
+      const actor = createActor("x3gbg-37777-77774-qaakq-cai", { agent });
+
+      // Ambil caller address
+      const callerRes = await actor.http_request_update({
+        url: "/caller-address",
+        method: "GET",
+        body: new Uint8Array([]),
+        headers: [],
+      });
+
+      if (callerRes.status_code === 200) {
+        const addr = new TextDecoder().decode(new Uint8Array(callerRes.body));
+        const parsed = JSON.parse(addr); // parsed = { address: "0x6163..." }
+        const address = parsed.address; // ambil value dari field "address"
+        setCallerAddress(address);
+
+        // Ambil saldo otomatis setelah alamat didapat
+        await fetchCallerBalance(id, address);
+      }
+    } catch (err) {
+      console.error("Gagal ambil caller address:", err);
+    }
+  }
+
+  async function fetchCallerBalance(id: Identity, address: string) {
+    try {
+      setCallerBalance("🔄 Mengambil saldo...");
+      const agent = new HttpAgent({ identity: id });
+      await agent.fetchRootKey();
+      const actor = createActor("x3gbg-37777-77774-qaakq-cai", { agent });
+
+      const res = await actor.http_request_update({
+        url: `/address-balance?address=${address}`,
+        method: "GET",
+        body: new Uint8Array([]),
+        headers: [],
+      });
 
       if (res.status_code !== 200) {
-        throw new Error(`Server returned ${res.status_code}`);
+        throw new Error(`Gagal fetch saldo: ${res.status_code}`);
       }
 
-      const address = new TextDecoder().decode(new Uint8Array(res.body));
-      console.log("Caller address:", address);
+      const raw = new TextDecoder().decode(new Uint8Array(res.body));
+      const parsed = JSON.parse(raw); // { balance: "1000000000000000000" }
+      const eth = Number(parsed.balance) / 1e18;
+      setCallerBalance(`💰 Saldo: ${eth} ETH`);
     } catch (err) {
-      console.error("Failed to fetch caller address:", err);
+      console.error(err);
+      setCallerBalance("❌ Gagal mengambil saldo");
     }
   }
+  // ====== Fetch Canister & Balance ======
+  async function fetchCanisterAndBalance(id: Identity) {
+    try {
+      const agent = new HttpAgent({ identity: id });
+      await agent.fetchRootKey(); // hapus kalau di mainnet
+      const actor = createActor("x3gbg-37777-77774-qaakq-cai", { agent });
 
-  async function whoamiUnauthenticated() {
-    const response = await fetch(
-      `${import.meta.env.VITE_CANISTER_ORIGIN}/whoami`
-    );
-    setWhoami(await response.text());
-  }
+      // Ambil canister address
+      const canisterRes = await actor.http_request_update({
+        url: "/canister-address",
+        method: "GET",
+        body: new Uint8Array([]),
+        headers: [],
+      });
 
-  async function caller() {
-    const response = await fetch(
-      `${import.meta.env.VITE_CANISTER_ORIGIN}/caller-address`,
-      {
-        headers: [
-          ["X-Ic-Force-Update", "true"],
-          ["Authorization", toJwt(identity)],
-        ],
+      if (canisterRes.status_code === 200) {
+        const addr = new TextDecoder().decode(new Uint8Array(canisterRes.body));
+        const parsed = JSON.parse(addr);
+        const address = parsed.address;
+        setCanisterAddress(address);
+
+        // Ambil saldo otomatis setelah alamat didapat
+        await fetchCanisterBalance(id, address);
       }
-    );
-    setWhoami(await response.text());
-  }
-
-  async function fetchDummyData() {
-    try {
-      const response = await fetch(
-        "https://jsonplaceholder.typicode.com/posts/1"
-      );
-      if (!response.ok)
-        throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
-      setWhoami(`Title: ${data.title}`);
-    } catch (error) {
-      console.error("Failed to fetch dummy data:", error);
-      setWhoami("Error fetching dummy data");
+    } catch (err) {
+      console.error("Gagal ambil canister address:", err);
     }
   }
-
-  async function whoamiAuthenticated() {
+  async function fetchCanisterBalance(id: Identity, address: string) {
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_CANISTER_ORIGIN}/whoami`,
-        {
-          method: "GET",
-          headers: [
-            ["X-Ic-Force-Update", "true"],
-            ["Authorization", toJwt(identity)],
-          ],
-        }
-      );
-      if (!response.ok)
-        throw new Error(`HTTP error! status: ${response.status}`);
-      setWhoami(await response.text());
-    } catch (error) {
-      console.error("Failed to fetch whoami:", error);
-      setWhoami("Error fetching whoami");
+      setCanisterBalance("🔄 Mengambil saldo...");
+      const agent = new HttpAgent({ identity: id });
+      await agent.fetchRootKey();
+      const actor = createActor("x3gbg-37777-77774-qaakq-cai", { agent });
+
+      const res = await actor.http_request_update({
+        url: `/address-balance?address=${address}`,
+        method: "GET",
+        body: new Uint8Array([]),
+        headers: [],
+      });
+
+      if (res.status_code !== 200) {
+        throw new Error(`Gagal fetch saldo: ${res.status_code}`);
+      }
+
+      const raw = new TextDecoder().decode(new Uint8Array(res.body));
+      const parsed = JSON.parse(raw); // { balance: "1000000000000000000" }
+      const eth = Number(parsed.balance) / 1e18; // Wei → ETH
+
+      setCanisterBalance(`💰 Saldo: ${eth} ETH`);
+    } catch (err) {
+      console.error(err);
+      setCanisterBalance("❌ Gagal mengambil saldo");
     }
   }
-
+  // ====== Logout ======
   async function logout() {
     const authClient = await AuthClient.create();
     await authClient.logout();
     setIdentity(null);
-    setWhoami("");
+    setCallerAddress("");
+    setPaymentStatus("");
   }
 
-  return (
-    <div>
-      <h1>Internet Identity</h1>
-      <h2>
-        Whoami principal: <span>{whoami}</span>
-      </h2>
+  // ====== Payment ======
+  async function handlePayment() {
+    if (!identity) {
+      alert("Login terlebih dahulu sebelum melakukan pembayaran");
+      return;
+    }
+    if (!amount || isNaN(Number(amount))) {
+      alert("Masukkan jumlah pembayaran yang valid");
+      return;
+    }
 
-      <button onClick={whoamiUnauthenticated}>Whoami Unauthenticated</button>
-      <button onClick={whoamiAuthenticated} disabled={!identity}>
-        Whoami Authenticated
-      </button>
-      <button onClick={caller} disabled={!identity}>
-        caller address
-      </button>
-      <button onClick={logout} disabled={!identity}>
-        Logout
-      </button>
-      <button onClick={fetchDummyData}>Fetch Dummy Data</button>
+    try {
+      setPaymentStatus("Memproses pembayaran...");
+
+      const agent = new HttpAgent({ identity });
+      await agent.fetchRootKey(); // hapus kalau di mainnet
+      const actor = createActor("x3gbg-37777-77774-qaakq-cai", { agent });
+
+      // Prepare JSON payload
+      const payload = JSON.stringify({
+        to: canisterAddress, // recipient address
+        value: amount, // payment amount as string
+      });
+
+      // Convert JSON to Uint8Array / number[]
+      const payloadBytes = new TextEncoder().encode(payload);
+      console.log(payloadBytes);
+      const res = await actor.http_request_update({
+        url: "/transfer-from-caller",
+        method: "POST",
+        body: payloadBytes,
+        headers: [["Content-Type", "application/json"]],
+      });
+      console.log(res);
+      if (res.status_code !== 200) {
+        throw new Error(`Gagal transfer: ${res.status_code}`);
+      }
+
+      const raw = new TextDecoder().decode(new Uint8Array(res.body));
+      setPaymentStatus(`✅ Pembayaran sukses: ${raw}`);
+
+      // Update balances
+      await fetchCallerBalance(identity, callerAddress);
+      await fetchCanisterBalance(identity, canisterAddress);
+    } catch (err) {
+      console.error(err);
+      setPaymentStatus("❌ Gagal memproses pembayaran");
+    }
+  }
+
+  // ====== Airdrop dari Faucet ======
+  async function handleAirdrop() {
+    if (!callerAddress) {
+      alert("Alamat belum tersedia. Login dulu.");
+      return;
+    }
+
+    try {
+      setAirdropStatus("🚀 Mengirim airdrop ETH...");
+
+      const res = await fetch(
+        `${
+          import.meta.env.VITE_CANISTER_ORIGIN
+        }/transfer-from-sepolia-faucet-wallet`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            to: callerAddress,
+            value: "0.01", // jumlah ETH airdrop
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Airdrop gagal");
+      }
+
+      setAirdropStatus(`✅ Airdrop sukses! Tx Hash: ${data.txHash}`);
+
+      // Update saldo setelah airdrop
+      await fetchCallerBalance(identity, callerAddress);
+    } catch (err) {
+      console.error(err);
+      setAirdropStatus("❌ Gagal airdrop ETH");
+    }
+  }
+
+  // ====== Render ======
+  return (
+    <div style={{ padding: "20px" }}>
+      <h1>💳 Halaman Pembayaran</h1>
+
+      {identity ? (
+        <>
+          <div
+            style={{
+              marginBottom: "20px",
+              padding: "15px",
+              border: "1px solid #ddd",
+              borderRadius: "10px",
+              backgroundColor: "#f9f9f9",
+            }}
+          >
+            <p>
+              <strong>Principal:</strong> {identity.getPrincipal().toString()}
+            </p>
+            <p>
+              <strong>Alamat Caller:</strong> {callerAddress || "-"}
+            </p>
+            <p>
+              <strong>Saldo:</strong> {callerBalance || "-"}
+            </p>
+            <p>
+              <strong>Alamat Pembayaran:</strong> {canisterAddress || "-"}
+            </p>
+            <p>
+              <strong>Saldo Pembayaran:</strong> {canisterBalance || "-"}
+            </p>
+
+            <button
+              onClick={logout}
+              style={{
+                marginTop: "10px",
+                padding: "8px 15px",
+                backgroundColor: "#ff4d4f",
+                color: "#fff",
+                border: "none",
+                borderRadius: "5px",
+                cursor: "pointer",
+              }}
+            >
+              Logout
+            </button>
+          </div>
+
+          <h2>Airdrop ETH</h2>
+          <button onClick={handleAirdrop}>💸 Airdrop 0.01 ETH</button>
+          <p>{airdropStatus}</p>
+          <div
+            style={{
+              flex: 2,
+              padding: "15px",
+              border: "1px solid #ddd",
+              borderRadius: "10px",
+              backgroundColor: "#fffbe6",
+            }}
+          >
+            <h2>Form Pembayaran</h2>
+            <p>jumlah: {amount} ETH</p>
+
+            <button
+              onClick={handlePayment}
+              style={{
+                padding: "8px 15px",
+                backgroundColor: "#52c41a",
+                color: "#fff",
+                border: "none",
+                borderRadius: "5px",
+                cursor: "pointer",
+              }}
+            >
+              Bayar Sekarang
+            </button>
+          </div>
+
+          {paymentStatus && <p>{paymentStatus}</p>}
+        </>
+      ) : (
+        <p>🔑 Silakan login menggunakan Internet Identity...</p>
+      )}
     </div>
   );
 }
