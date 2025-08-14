@@ -265,6 +265,19 @@ app.post(
     }
   }
 );
+app.get('/payment', (req, res) => {
+    const to = "0xReceiverWalletAddress";
+    const valueInEth = "0.01";
+
+    // Ethereum payment URI
+    const paymentLink = `http://wykia-ph777-77774-qaama-cai.raw.localhost:4943/payment`;
+
+    res.json({
+        success: true,
+        paymentLink
+    });
+});
+
 app.post(
     '/transfer-from-canister',
     async (req: Request<any, any, { to: string; value: string }>, res) => {
@@ -374,7 +387,7 @@ app.post("/dummy-test", (_req, res) => {
   res.json(dummyResponse);
 });
 
-app.use(express.static("/dist"));
+// app.use(express.static("/dist"));
 
 return app.listen();
 },{

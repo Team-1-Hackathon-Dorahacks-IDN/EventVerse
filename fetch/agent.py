@@ -51,6 +51,20 @@ tools = [
             "strict": True
         }
     },
+      {
+        "type": "function",
+        "function": {
+            "name": "payment",
+            "description": "Returns the payment link",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": False
+            },
+            "strict": True
+        }
+    },
     {
         "type": "function",
         "function": {
@@ -132,6 +146,9 @@ async def call_icp_endpoint(func_name: str, args: dict):
     if func_name == "get_current_fee_percentiles":
         url = f"{BASE_URL}/get-current-fee-percentiles"
         response = requests.post(url, headers=HEADERS, json={})
+    elif func_name == "payment":
+        url = f"{BASE_URL}/payment"
+        response = requests.get(url, headers=HEADERSUPDATE, json={})
     elif func_name == "canister_address":
         url = f"{BASE_URL}/canister-address"
         response = requests.get(url, headers=HEADERSUPDATE, json={})

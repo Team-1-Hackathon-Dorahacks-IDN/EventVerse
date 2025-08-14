@@ -8,12 +8,17 @@
         "experimental": true,
           "test": {
                     "memorySizeIncreaseExpected": true
-                },
-          "assets": [["src/frontend/dist", "dist"]],
-               "build_assets": "npm run build"
+                }
       }
     } ,
-      
+       "frontend": {
+      "dependencies": ["backend"],
+      "frontend": {
+        "entrypoint": "src/frontend/index.html"
+      },
+      "source": ["src/frontend/dist"],
+      "type": "assets"
+    },
      "internet_identity": {
             "type": "custom",
             "candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",
