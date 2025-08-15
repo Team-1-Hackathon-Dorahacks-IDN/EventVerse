@@ -195,7 +195,7 @@ function Payment() {
       const payloadBytes = new TextEncoder().encode(payload);
       console.log(payloadBytes);
       const res = await actor.http_request_update({
-        url: "/payo",
+        url: "/payout",
         method: "POST",
         body: payloadBytes,
         headers: [["Content-Type", "application/json"]],
@@ -204,9 +204,11 @@ function Payment() {
       if (res.status_code !== 200) {
         throw new Error(`Gagal transfer: ${res.status_code}`);
       }
-
       const raw = new TextDecoder().decode(new Uint8Array(res.body));
-      setPaymentStatus(`✅ Pembayaran sukses: ${raw}`);
+      console.log("raw", raw);
+      const parsed = JSON.parse(raw);
+      const txHash = parsed.txHash;
+      setPaymentStatus(`✅ Pembayaran sukses: ${txHash}`);
 
       // Update balances
       await fetchCallerBalance(identity, callerAddress);

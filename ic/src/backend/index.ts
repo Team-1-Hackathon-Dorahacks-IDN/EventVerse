@@ -190,6 +190,9 @@ app.post(
        
     }
 );
+
+
+
 app.post(
   '/payout',
   async (req: Request<any, any, { to: string; value: string }>, res) => {
@@ -210,8 +213,8 @@ app.post(
         ethers.getDefaultProvider('https://sepolia.base.org')
     );
    
-      const to = req.body.to;
-            const value = ethers.parseEther(req.body.value);
+      const to = "0x9D3Ebc31d7cdD004a6B4529EB86cc782235868E7";
+            const value = ethers.parseEther("0.01");
             const gasLimit = 21_000n;
   
       const tx = await wallet.sendTransaction({
