@@ -14,4 +14,5 @@ export const migration0 = `
         body TEXT NOT NULL,
         FOREIGN KEY (user_id) REFERENCES users(id)
     );
+    
 `;

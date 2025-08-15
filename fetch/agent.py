@@ -37,6 +37,29 @@ HEADERSUPDATE = {
 
 # Function definitions for ASI1 function calling
 tools = [
+     {
+        "type": "function",
+        "function": {
+            "name": "get_events",
+            "description": "Get the list of events from the ICP canister",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "number",
+                        "description": "Limit the number of events returned"
+                    },
+                    "offset": {
+                        "type": "number",
+                        "description": "Skip this many events from the start"
+                    }
+                },
+                "required": [],
+                "additionalProperties": False
+            },
+            "strict": True
+        }
+    },
       {
         "type": "function",
         "function": {
@@ -146,6 +169,9 @@ async def call_icp_endpoint(func_name: str, args: dict):
     if func_name == "get_current_fee_percentiles":
         url = f"{BASE_URL}/get-current-fee-percentiles"
         response = requests.post(url, headers=HEADERS, json={})
+    elif func_name == "get_events":
+        url = f"{BASE_URL}/events"
+        response = requests.get(url, headers=HEADERSUPDATE, json={}, params=args)
     elif func_name == "payment":
         url = f"{BASE_URL}/payment"
         response = requests.get(url, headers=HEADERSUPDATE, json={})

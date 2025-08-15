@@ -1,14 +1,15 @@
 import { canisterSelf, msgCaller, StableBTreeMap, stableJson } from "azle";
 import { bitcoin_network } from "azle/canisters/management/idl";
-import { ic, jsonStringify, postUpgrade, preUpgrade, query, Server, text, ThresholdWallet } from 'azle/experimental';
+import { ic,  postUpgrade, preUpgrade, query, Server, text, ThresholdWallet } from 'azle/experimental';
 import { ethers } from 'ethers';
 import express, { Request } from "express";
 import {  initDb } from './db';
 import { Database } from 'sql.js/dist/sql-asm.js';
-import { init,Principal } from 'azle/experimental';
+import { init } from 'azle/experimental';
 import { getRouter as getRouterPosts } from './entities/posts/router';
 import { getRouter as getRouterUsers } from './entities/users/router';
-import cors from 'cors';
+import { getRouter as getRouterEvents } from './entities/events/router';
+
 // Dummy values instead of real Bitcoin interactions
 const NETWORK: bitcoin_network = { testnet: null };
 const DERIVATION_PATH: Uint8Array[] = [];
@@ -24,6 +25,7 @@ app.use(express.json());
 
   app.use('/users', getRouterUsers());
         app.use('/posts', getRouterPosts());
+           app.use('/events', getRouterEvents());
 /// Dummy: Returns the balance of a given Bitcoin address.
 app.get("/", async (req: Request, res) => {
   const welcomeMessage = {
@@ -315,10 +317,9 @@ return app.listen();
 },{
      init: init([],async() => {
              db = await initDb();
-        
         }),
         preUpgrade:preUpgrade(()=>{
-  stableDbMap.insert('DATABASE', db.export());
+          stableDbMap.insert('DATABASE', db.export());
         }),
          postUpgrade: postUpgrade([],async() => {
            const database = stableDbMap.get('DATABASE');
