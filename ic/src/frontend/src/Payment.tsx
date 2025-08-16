@@ -4,6 +4,7 @@ import { Identity, HttpAgent } from "@dfinity/agent";
 import { AuthClient } from "@dfinity/auth-client";
 import { createActor } from "../../declarations/backend";
 import { useParams } from "react-router-dom";
+import "./Payment.css"; // we'll define hover styles here
 
 function Payment() {
   const { eventId } = useParams();
@@ -18,7 +19,6 @@ function Payment() {
   const [email, setEmail] = useState("");
   const [eventDetail, setEventDetail] = useState(null);
 
-  // ===== Authentication & Fetch Data =====
   useEffect(() => {
     authenticateAndFetch();
   }, []);
@@ -44,12 +44,10 @@ function Payment() {
 
       setIdentity(id);
 
-      // ===== Agent & Actor =====
       const agent = new HttpAgent({ identity: id });
-      await agent.fetchRootKey(); // cukup sekali
+      await agent.fetchRootKey();
       const actor = createActor("w7lou-c7777-77774-qaamq-cai", { agent });
 
-      // ===== Fetch data paralel =====
       await Promise.all([
         fetchCallerAndBalance(actor),
         fetchCanisterAndBalance(actor),
@@ -60,10 +58,8 @@ function Payment() {
     }
   }
 
-  // ===== Fetch Event Detail =====
   async function fetchEventDetail(actor, eventId: string) {
     try {
-      console.log("Fetching event detail...");
       const res = await actor.http_request_update({
         url: `/events/${eventId}`,
         method: "GET",
@@ -82,7 +78,6 @@ function Payment() {
     }
   }
 
-  // ===== Fetch Caller & Balance =====
   async function fetchCallerAndBalance(actor) {
     try {
       const res = await actor.http_request_update({
@@ -128,7 +123,6 @@ function Payment() {
     }
   }
 
-  // ===== Fetch Canister & Balance =====
   async function fetchCanisterAndBalance(actor) {
     try {
       const res = await actor.http_request_update({
@@ -174,7 +168,6 @@ function Payment() {
     }
   }
 
-  // ===== Logout =====
   async function logout() {
     const authClient = await AuthClient.create();
     await authClient.logout();
@@ -183,7 +176,6 @@ function Payment() {
     setPaymentStatus("");
   }
 
-  // ===== Payment =====
   async function handlePayment() {
     if (!identity) {
       alert("Login terlebih dahulu sebelum melakukan pembayaran");
@@ -225,7 +217,6 @@ function Payment() {
     }
   }
 
-  // ===== Airdrop =====
   async function handleAirdrop() {
     if (!callerAddress) {
       alert("Alamat belum tersedia. Login dulu.");
@@ -259,46 +250,24 @@ function Payment() {
     }
   }
 
-  // ===== Styles =====
   const containerStyle = {
     padding: "30px",
     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
     maxWidth: "600px",
     margin: "0 auto",
+    backgroundColor: "var(--primary-color)",
+    color: "var(--text-color)",
+    minHeight: "100vh",
   };
+
   const cardStyle = {
     marginBottom: "20px",
     padding: "20px",
-    border: "1px solid #ddd",
     borderRadius: "12px",
-    backgroundColor: "#fefefe",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+    backgroundColor: "var(--secondary-color)",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.5)",
   };
-  const buttonStyle = {
-    padding: "10px 18px",
-    border: "none",
-    borderRadius: "6px",
-    cursor: "pointer",
-    fontWeight: "bold",
-    transition: "all 0.2s",
-  };
-  const logoutButtonStyle = {
-    ...buttonStyle,
-    backgroundColor: "#ff4d4f",
-    color: "#fff",
-    marginTop: "15px",
-  };
-  const paymentButtonStyle = {
-    ...buttonStyle,
-    backgroundColor: "#52c41a",
-    color: "#fff",
-  };
-  const airdropButtonStyle = {
-    ...buttonStyle,
-    backgroundColor: "#1890ff",
-    color: "#fff",
-    marginBottom: "10px",
-  };
+
   const sectionStyle = { marginBottom: "25px" };
 
   return (
@@ -323,14 +292,14 @@ function Payment() {
             <p>
               <strong>Saldo Pembayaran:</strong> {canisterBalance || "-"}
             </p>
-            <button style={logoutButtonStyle} onClick={logout}>
+            <button className="btn logout" onClick={logout}>
               Logout
             </button>
           </div>
 
           {eventDetail && (
-            <div style={{ ...cardStyle, backgroundColor: "#e6f7ff" }}>
-              <h2>Detail Event</h2>
+            <div style={{ ...cardStyle, backgroundColor: "#2a2a2a" }}>
+              <h2 style={{ color: "var(--subheading-color)" }}>Detail Event</h2>
               <p>
                 <strong>Nama Event:</strong> {eventDetail.name}
               </p>
@@ -346,8 +315,10 @@ function Payment() {
             </div>
           )}
 
-          <div style={{ ...cardStyle, backgroundColor: "#fffbe6" }}>
-            <h2>Form Pembayaran</h2>
+          <div style={{ ...cardStyle, backgroundColor: "#2a2a2a" }}>
+            <h2 style={{ color: "var(--subheading-color)" }}>
+              Form Pembayaran
+            </h2>
             <label style={{ display: "block", marginBottom: "8px" }}>
               Email untuk notifikasi:
             </label>
@@ -358,14 +329,16 @@ function Payment() {
               placeholder="you@example.com"
               style={{
                 width: "100%",
-                padding: "8px",
+                padding: "10px",
                 borderRadius: "6px",
-                border: "1px solid #ccc",
+                border: "1px solid #555",
+                backgroundColor: "#1f1f1f",
+                color: "var(--text-color)",
                 marginBottom: "12px",
               }}
             />
             <p>Jumlah: {amount} ETH</p>
-            <button style={paymentButtonStyle} onClick={handlePayment}>
+            <button className="btn payment" onClick={handlePayment}>
               Bayar Sekarang
             </button>
             {paymentStatus && (
@@ -374,8 +347,8 @@ function Payment() {
           </div>
 
           <div style={sectionStyle}>
-            <h2>Airdrop ETH</h2>
-            <button style={airdropButtonStyle} onClick={handleAirdrop}>
+            <h2 style={{ color: "var(--subheading-color)" }}>Airdrop ETH</h2>
+            <button className="btn airdrop" onClick={handleAirdrop}>
               💸 Airdrop 0.01 ETH
             </button>
             <p>{airdropStatus}</p>

@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useState, useEffect, useRef } from "react";
-
+import "./chat.css";
 interface Message {
   id: string;
   content: string;
