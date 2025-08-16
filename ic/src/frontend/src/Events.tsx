@@ -21,7 +21,6 @@ export default function EventsPage() {
     price: "",
   });
 
-  // ===== Edit state =====
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editEventData, setEditEventData] = useState({
     name: "",
@@ -30,7 +29,6 @@ export default function EventsPage() {
     price: "",
   });
 
-  // ===== Fetch all events =====
   useEffect(() => {
     fetch("http://w7lou-c7777-77774-qaamq-cai.raw.localhost:4943/events")
       .then((res) => res.json())
@@ -38,7 +36,6 @@ export default function EventsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // ===== Add Event =====
   const handleAddEvent = async () => {
     try {
       const res = await fetch(
@@ -58,7 +55,6 @@ export default function EventsPage() {
     }
   };
 
-  // ===== Delete Event =====
   const handleDelete = async (id: number) => {
     try {
       await fetch(
@@ -76,7 +72,6 @@ export default function EventsPage() {
     }
   };
 
-  // ===== Start Editing =====
   const startEdit = (event: Event) => {
     setEditingId(event.id);
     setEditEventData({
@@ -87,10 +82,8 @@ export default function EventsPage() {
     });
   };
 
-  // ===== Cancel Editing =====
   const cancelEdit = () => setEditingId(null);
 
-  // ===== Save Editing =====
   const saveEdit = async (id: number) => {
     try {
       const res = await fetch(
@@ -110,30 +103,36 @@ export default function EventsPage() {
     }
   };
 
-  if (loading) return <div className="loading">Loading...</div>;
+  if (loading)
+    return (
+      <div className="text-center text-gray-400 mt-20 text-lg">Loading...</div>
+    );
 
   return (
-    <div className="container">
-      <h1>Events</h1>
+    <div className="max-w-3xl mx-auto p-6">
+      <h1 className="text-3xl font-bold text-center mb-8">Events</h1>
 
       {/* Add New Event */}
-      <div className="card">
-        <h2>Add New Event</h2>
-        <div className="form-row">
+      <div className="bg-gray-800 p-6 rounded-xl shadow-md mb-8">
+        <h2 className="text-xl text-gray-300 mb-4">Add New Event</h2>
+        <div className="flex flex-wrap gap-4 mb-4">
           <input
             type="text"
             placeholder="Name"
+            className="flex-1 p-2 rounded-md bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
             value={newEvent.name}
             onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })}
           />
           <input
             type="date"
+            className="flex-1 p-2 rounded-md bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
             value={newEvent.date}
             onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
           />
           <input
             type="text"
             placeholder="Location"
+            className="flex-1 p-2 rounded-md bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
             value={newEvent.location}
             onChange={(e) =>
               setNewEvent({ ...newEvent, location: e.target.value })
@@ -141,27 +140,35 @@ export default function EventsPage() {
           />
           <input
             type="text"
-            placeholder="Price"
+            placeholder="Price (ETH)"
+            className="flex-1 p-2 rounded-md bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
             value={newEvent.price}
             onChange={(e) =>
               setNewEvent({ ...newEvent, price: e.target.value })
             }
           />
         </div>
-        <button className="btn add" onClick={handleAddEvent}>
+        <button
+          className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-md transition"
+          onClick={handleAddEvent}
+        >
           Add
         </button>
       </div>
 
       {/* Events List */}
-      <ul className="events-list">
+      <ul className="space-y-4">
         {events.map((event) => (
-          <li key={event.id} className="event-item">
+          <li
+            key={event.id}
+            className="bg-gray-800 p-4 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center shadow"
+          >
             {editingId === event.id ? (
-              <div className="event-edit">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full">
                 <input
                   type="text"
                   value={editEventData.name}
+                  className="p-2 rounded-md bg-gray-700 border border-gray-600 text-white flex-1"
                   onChange={(e) =>
                     setEditEventData({ ...editEventData, name: e.target.value })
                   }
@@ -169,6 +176,7 @@ export default function EventsPage() {
                 <input
                   type="date"
                   value={editEventData.date}
+                  className="p-2 rounded-md bg-gray-700 border border-gray-600 text-white flex-1"
                   onChange={(e) =>
                     setEditEventData({ ...editEventData, date: e.target.value })
                   }
@@ -176,6 +184,7 @@ export default function EventsPage() {
                 <input
                   type="text"
                   value={editEventData.location}
+                  className="p-2 rounded-md bg-gray-700 border border-gray-600 text-white flex-1"
                   onChange={(e) =>
                     setEditEventData({
                       ...editEventData,
@@ -186,6 +195,7 @@ export default function EventsPage() {
                 <input
                   type="text"
                   value={editEventData.price}
+                  className="p-2 rounded-md bg-gray-700 border border-gray-600 text-white flex-1"
                   onChange={(e) =>
                     setEditEventData({
                       ...editEventData,
@@ -193,183 +203,46 @@ export default function EventsPage() {
                     })
                   }
                 />
-                <button className="btn save" onClick={() => saveEdit(event.id)}>
-                  Save
-                </button>
-                <button className="btn cancel" onClick={cancelEdit}>
-                  Cancel
-                </button>
+                <div className="flex gap-2 mt-2 sm:mt-0">
+                  <button
+                    className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md transition"
+                    onClick={() => saveEdit(event.id)}
+                  >
+                    Save
+                  </button>
+                  <button
+                    className="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded-md transition"
+                    onClick={cancelEdit}
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             ) : (
-              <>
-                <div className="event-info">
+              <div className="w-full flex flex-col sm:flex-row sm:justify-between sm:items-center">
+                <div className="text-white mb-2 sm:mb-0">
                   <strong>{event.name}</strong> <br />
-                  {event.date} — {event.location} — ${event.price}
+                  {event.date} — {event.location} — {event.price} ETH
                 </div>
-                <div className="event-actions">
-                  <button className="btn edit" onClick={() => startEdit(event)}>
+                <div className="flex gap-2">
+                  <button
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md transition"
+                    onClick={() => startEdit(event)}
+                  >
                     Edit
                   </button>
                   <button
-                    className="btn delete"
+                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md transition"
                     onClick={() => handleDelete(event.id)}
                   >
                     Delete
                   </button>
                 </div>
-              </>
+              </div>
             )}
           </li>
         ))}
       </ul>
-
-      {/* CSS */}
-      <style>
-        {`
-          body {
-            background-color: #121212;
-            color: #eee;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-          }
-
-          .container {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 30px;
-          }
-
-          h1 {
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-            text-align: center;
-          }
-
-          .card {
-            background-color: #1e1e1e;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            margin-bottom: 20px;
-          }
-
-          h2 {
-            margin-bottom: 12px;
-            color: #bbb;
-          }
-
-          .form-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 12px;
-          }
-
-          input {
-            flex: 1;
-            padding: 8px 12px;
-            border-radius: 8px;
-            border: 1px solid #555;
-            background-color: #2a2a2a;
-            color: #eee;
-            font-size: 14px;
-          }
-
-          input:focus {
-            outline: none;
-            border-color: #4f46e5;
-            box-shadow: 0 0 5px #4f46e5;
-          }
-
-          .btn {
-            padding: 10px 18px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            border: none;
-            transition: all 0.3s ease;
-            margin-left: 5px;
-          }
-
-          .btn.add {
-            background-color: #4f46e5;
-            color: #fff;
-          }
-          .btn.add:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0,0,0,0.4);
-          }
-
-          .btn.edit {
-            background: linear-gradient(135deg, #fbbf24, #f59e0b);
-            color: #fff;
-          }
-          .btn.edit:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(251,191,36,0.6);
-          }
-
-          .btn.save {
-            background: linear-gradient(135deg, #10b981, #34d399);
-            color: #fff;
-          }
-          .btn.save:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(16,185,129,0.6);
-          }
-
-          .btn.cancel {
-            background: #555;
-            color: #fff;
-          }
-          .btn.cancel:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(85,85,85,0.6);
-          }
-
-          .btn.delete {
-            background-color: #e53935;
-            color: #fff;
-          }
-          .btn.delete:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0,0,0,0.4);
-          }
-
-          .events-list {
-            list-style: none;
-            padding: 0;
-          }
-
-          .event-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #333;
-            padding: 12px 0;
-            flex-wrap: wrap;
-          }
-
-          .event-info {
-            line-height: 1.4;
-          }
-
-          .event-actions {
-            display: flex;
-            gap: 5px;
-          }
-
-          .event-edit input {
-            margin-bottom: 5px;
-          }
-
-          .loading {
-            text-align: center;
-            color: #ccc;
-            font-size: 18px;
-            margin-top: 50px;
-          }
-        `}
-      </style>
     </div>
   );
 }
