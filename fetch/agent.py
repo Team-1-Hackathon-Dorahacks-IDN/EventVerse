@@ -37,11 +37,30 @@ HEADERSUPDATE = {
 
 # Function definitions for ASI1 function calling
 tools = [
+    {
+    "type": "function",
+    "function": {
+        "name": "create_event",
+        "description": "Create a new event in the ICP canister",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string", "description": "Name of the event"},
+                "date": {"type": "string", "description": "Date of the event"},
+                "location": {"type": "string", "description": "Location of the event"},
+                "price": {"type": "string", "description": "Price of the event but dont add any currency"}
+            },
+            "required": ["name", "date", "location", "price"],
+            "additionalProperties": False
+        },
+        "strict": True
+    }
+},
      {
         "type": "function",
         "function": {
             "name": "get_events",
-            "description": "Get the list of events from the ICP canister",
+            "description": "Get the list of events from the ICP canister please always use ETH for event's price",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -60,6 +79,23 @@ tools = [
             "strict": True
         }
     },
+ {
+    "type": "function",
+    "function": {
+        "name": "get_event_by_id",
+        "description": "Get details of a specific event by its ID",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "eventId": {"type": "string", "description": "ID of the event"}
+            },
+            "required": ["eventId"],
+            "additionalProperties": False
+        },
+        "strict": True
+    }
+},
+
       {
         "type": "function",
         "function": {
@@ -175,6 +211,11 @@ async def call_icp_endpoint(func_name: str, args: dict):
     if func_name == "get_current_fee_percentiles":
         url = f"{BASE_URL}/get-current-fee-percentiles"
         response = requests.post(url, headers=HEADERS, json={})
+    elif func_name == "get_event_by_id":
+        event_id = args.get("eventId")
+        url = f"{BASE_URL}/events/{event_id}"
+        response = requests.get(url, headers=HEADERSUPDATE, json={})
+
     elif func_name == "get_events":
         url = f"{BASE_URL}/events"
         response = requests.get(url, headers=HEADERSUPDATE, json={}, params=args)
@@ -182,6 +223,9 @@ async def call_icp_endpoint(func_name: str, args: dict):
         event_id = args.get("eventId")
         url = f"{BASE_URL}/payment/{event_id}"
         response = requests.get(url, headers=HEADERSUPDATE, json={})
+    elif func_name == "create_event":
+        url = f"{BASE_URL}/events"
+        response = requests.post(url, headers=HEADERSUPDATE, json=args)
 
     elif func_name == "canister_address":
         url = f"{BASE_URL}/canister-address"
@@ -227,7 +271,7 @@ async def process_query(query: str, ctx: Context) -> str:
         messages_history = [initial_message, response_json["choices"][0]["message"]]
 
         if not tool_calls:
-            return "I couldn't determine what Bitcoin information you're looking for. Please try rephrasing your question."
+            return "I couldn't determine what Event information you're looking for. Please try rephrasing your question."
 
         # Step 3: Execute tools and format results
         for tool_call in tool_calls:
