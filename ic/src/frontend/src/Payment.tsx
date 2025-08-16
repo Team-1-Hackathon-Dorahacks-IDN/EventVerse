@@ -13,6 +13,8 @@ function Payment() {
   const [paymentStatus, setPaymentStatus] = useState("");
   const [canisterAddress, setCanisterAddress] = useState("");
   const [airdropStatus, setAirdropStatus] = useState("");
+  // Tambahkan state baru
+  const [email, setEmail] = useState("");
 
   useEffect(() => {
     authenticate();
@@ -183,12 +185,13 @@ function Payment() {
       const queryParams = new URLSearchParams({
         to: canisterAddress,
         value: amount,
+        email: email, // kirim email ke backend
       }).toString();
 
       const res = await actor.http_request_update({
         url: `/payout?${queryParams}`,
-        method: "GET", // biasanya GET kalau pakai query
-        body: [], // kosong karena tidak pakai body
+        method: "GET",
+        body: [],
         headers: [],
       });
 
@@ -326,6 +329,24 @@ function Payment() {
 
           <div style={{ ...cardStyle, backgroundColor: "#fffbe6" }}>
             <h2>Form Pembayaran</h2>
+
+            <label style={{ display: "block", marginBottom: "8px" }}>
+              Email untuk notifikasi:
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              style={{
+                width: "100%",
+                padding: "8px",
+                borderRadius: "6px",
+                border: "1px solid #ccc",
+                marginBottom: "12px",
+              }}
+            />
+
             <p>Jumlah: {amount} ETH</p>
             <button style={paymentButtonStyle} onClick={handlePayment}>
               Bayar Sekarang

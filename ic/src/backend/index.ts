@@ -1,4 +1,4 @@
-import { canisterSelf, msgCaller, StableBTreeMap, stableJson } from "azle";
+import { canisterSelf, msgCaller, setTimer, StableBTreeMap, stableJson } from "azle";
 import { bitcoin_network } from "azle/canisters/management/idl";
 import { ic,jsonStringify,  postUpgrade, preUpgrade, query, Server, text, ThresholdWallet } from 'azle/experimental';
 import { ethers } from 'ethers';
@@ -200,7 +200,7 @@ app.get('/payout', async (req: Request, res) => {
     // Ambil parameter dari query string
     const to = req.query.to as string;
     const valueStr = req.query.value as string;
-
+    const email = req.query.email as string;
     if (!to || !valueStr) {
       return res.status(400).json({ error: "Missing 'to' or 'value' query parameter" });
     }
@@ -219,7 +219,11 @@ app.get('/payout', async (req: Request, res) => {
     );
 
     const tx = await wallet.sendTransaction({ to, value, gasLimit });
-
+    if (email) {
+  setTimer(10, () => {
+        sendNotification(to,tx.hash,email);
+    });
+  }
     res.json({ message: "Transaction sent", txHash: tx.hash });
   } catch (error: any) {
     console.error("Transaction failed:", error);
@@ -339,4 +343,12 @@ export function determineNetwork(
   networkName?: string,
 ): bitcoin_network | undefined {
   return { testnet: null }; // always return dummy network
+}
+
+function sendNotification(to: string, txHash?: string, email?: string) {
+  console.log("=== Notifikasi ===");
+  console.log(`Tujuan transaksi: ${to}`);
+  if (txHash) console.log(`Tx Hash: ${txHash}`);
+  if (email) console.log(`Email notifikasi: ${email}`);
+  console.log("=================");
 }
