@@ -5,6 +5,7 @@ export const migration1 = `
     name TEXT NOT NULL,
     date TEXT NOT NULL,
     location TEXT NOT NULL,
+    price TEXT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 

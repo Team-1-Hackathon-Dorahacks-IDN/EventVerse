@@ -9,6 +9,7 @@ import { init } from 'azle/experimental';
 import { getRouter as getRouterPosts } from './entities/posts/router';
 import { getRouter as getRouterUsers } from './entities/users/router';
 import { getRouter as getRouterEvents } from './entities/events/router';
+import { getEvent } from "./entities/events/db";
 
 // Dummy values instead of real Bitcoin interactions
 const NETWORK: bitcoin_network = { testnet: null };
@@ -153,16 +154,27 @@ app.post(
     }
   }
 );
-app.get('/payment', (req, res) => {
-    const to = "0xReceiverWalletAddress";
-    const valueInEth = "0.01";
+app.get('/payment/:eventId', (req, res) => {
+    const { eventId } = req.params;
 
-    // Ethereum payment URI
-    const paymentLink = `http://wwifi-ux777-77774-qaana-cai.raw.localhost:4943/payment`;
+    // Cari event dari database
+    const event = getEvent(db, Number(eventId));
+    if (!event) {
+        return res.status(404).json({
+            success: false,
+            message: "Event not found"
+        });
+    }
+
+
+
+    // Backend yang handle pembayaran real
+    const paymentLink = `http://wwifi-ux777-77774-qaana-cai.raw.localhost:4943/payment/${eventId}`;
 
     res.json({
         success: true,
-        paymentLink
+        paymentLink,
+
     });
 });
 
@@ -197,20 +209,31 @@ app.post(
 
 app.get('/payout', async (req: Request, res) => {
   try {
-    // Ambil parameter dari query string
-    const to = req.query.to as string;
-    const valueStr = req.query.value as string;
     const email = req.query.email as string;
-    if (!to || !valueStr) {
-      return res.status(400).json({ error: "Missing 'to' or 'value' query parameter" });
+    const eventId = req.query.eventId as string;
+
+    if (!eventId) {
+      return res.status(400).json({ error: "Missing 'eventId' query parameter" });
     }
 
-    // Convert ETH string ke Wei
-    const value = ethers.parseEther(valueStr);
+    // 1. Ambil event dari database
+    const event = getEvent(db, Number(eventId));
+    if (!event) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+
+    // Pastikan ada kolom price di event table
+    const valueStr = event.price?.toString();
+    if (!valueStr) {
+      return res.status(400).json({ error: "Event has no price set" });
+    }
+
+    const value = ethers.parseEther(valueStr); // convert ETH string to Wei
     const gasLimit = 21_000n;
 
     ic.setOutgoingHttpOptions({ cycles: 200_850_523_200n });
 
+    // Wallet pengirim
     const wallet = new ThresholdWallet(
       {
         derivationPath: [msgCaller().toUint8Array()],
@@ -218,13 +241,32 @@ app.get('/payout', async (req: Request, res) => {
       ethers.getDefaultProvider('https://sepolia.base.org')
     );
 
+    // Wallet penerima (canister address / organizer)
+    const walletPayment = new ThresholdWallet(
+      {
+        derivationPath: [canisterSelf().toUint8Array()],
+      },
+      ethers.getDefaultProvider('https://sepolia.base.org')
+    );
+
+    const to = await walletPayment.getAddress();
+
+    // 2. Kirim transaksi sesuai harga event
     const tx = await wallet.sendTransaction({ to, value, gasLimit });
+
+    // 3. Kirim notifikasi jika ada email
     if (email) {
-  setTimer(10, () => {
-        sendNotification(to,tx.hash,email);
+      setTimer(10, () => {
+        sendNotification(to, eventId, tx.hash, email);
+      });
+    }
+
+    res.json({
+      message: "Transaction sent",
+      txHash: tx.hash,
+      eventId,
+      amount: valueStr
     });
-  }
-    res.json({ message: "Transaction sent", txHash: tx.hash });
   } catch (error: any) {
     console.error("Transaction failed:", error);
     res.status(500).json({
@@ -233,6 +275,7 @@ app.get('/payout', async (req: Request, res) => {
     });
   }
 });
+
 
 /// Dummy: Returns the UTXOs of a given Bitcoin address.
 app.post("/get-utxos", async (req: Request, res) => {
@@ -345,8 +388,14 @@ export function determineNetwork(
   return { testnet: null }; // always return dummy network
 }
 
-function sendNotification(to: string, txHash?: string, email?: string) {
+function sendNotification(
+  to: string,
+  eventId: string,
+  txHash?: string,
+  email?: string
+) {
   console.log("=== Notifikasi ===");
+  console.log(`Event ID: ${eventId}`);
   console.log(`Tujuan transaksi: ${to}`);
   if (txHash) console.log(`Tx Hash: ${txHash}`);
   if (email) console.log(`Email notifikasi: ${email}`);

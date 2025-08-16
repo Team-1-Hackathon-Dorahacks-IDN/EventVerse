@@ -3,8 +3,10 @@ import React, { useEffect, useState } from "react";
 import { Identity, HttpAgent } from "@dfinity/agent";
 import { AuthClient } from "@dfinity/auth-client";
 import { createActor } from "../../declarations/backend";
+import { useParams } from "react-router-dom";
 
 function Payment() {
+  const { eventId } = useParams();
   const [identity, setIdentity] = useState<Identity | null>(null);
   const [callerAddress, setCallerAddress] = useState("");
   const [callerBalance, setCallerBalance] = useState("");
@@ -13,73 +15,98 @@ function Payment() {
   const [paymentStatus, setPaymentStatus] = useState("");
   const [canisterAddress, setCanisterAddress] = useState("");
   const [airdropStatus, setAirdropStatus] = useState("");
-  // Tambahkan state baru
   const [email, setEmail] = useState("");
+  const [eventDetail, setEventDetail] = useState(null);
 
+  // ===== Authentication & Fetch Data =====
   useEffect(() => {
-    authenticate();
+    authenticateAndFetch();
   }, []);
 
-  // ====== Authentication ======
-  async function authenticate() {
-    const authClient = await AuthClient.create();
-    const isAuthenticated = await authClient.isAuthenticated();
-    if (isAuthenticated) {
-      setIdentity(authClient.getIdentity());
-      await fetchCallerAndBalance(authClient.getIdentity());
-      await fetchCanisterAndBalance(authClient.getIdentity());
-    } else {
-      await handleIsNotAuthenticated(authClient);
+  async function authenticateAndFetch() {
+    try {
+      const authClient = await AuthClient.create();
+      let id: Identity;
+
+      if (await authClient.isAuthenticated()) {
+        id = authClient.getIdentity();
+      } else {
+        await new Promise((resolve, reject) => {
+          authClient.login({
+            identityProvider: import.meta.env.VITE_IDENTITY_PROVIDER,
+            onSuccess: resolve,
+            onError: reject,
+            windowOpenerFeatures: `width=500,height=500`,
+          });
+        });
+        id = authClient.getIdentity();
+      }
+
+      setIdentity(id);
+
+      // ===== Agent & Actor =====
+      const agent = new HttpAgent({ identity: id });
+      await agent.fetchRootKey(); // cukup sekali
+      const actor = createActor("w7lou-c7777-77774-qaamq-cai", { agent });
+
+      // ===== Fetch data paralel =====
+      await Promise.all([
+        fetchCallerAndBalance(actor),
+        fetchCanisterAndBalance(actor),
+        eventId ? fetchEventDetail(actor, eventId) : Promise.resolve(null),
+      ]);
+    } catch (err) {
+      console.error("Authentication/Fetch error:", err);
     }
   }
 
-  async function handleIsNotAuthenticated(authClient: AuthClient) {
-    await new Promise((resolve, reject) => {
-      authClient.login({
-        identityProvider: import.meta.env.VITE_IDENTITY_PROVIDER,
-        onSuccess: resolve,
-        onError: reject,
-        windowOpenerFeatures: `width=500,height=500`,
+  // ===== Fetch Event Detail =====
+  async function fetchEventDetail(actor, eventId: string) {
+    try {
+      console.log("Fetching event detail...");
+      const res = await actor.http_request_update({
+        url: `/events/${eventId}`,
+        method: "GET",
+        body: new Uint8Array([]),
+        headers: [],
       });
-    });
-    const id = authClient.getIdentity();
-    setIdentity(id);
-    await fetchCallerAndBalance(id);
+
+      if (res.status_code === 200) {
+        const raw = new TextDecoder().decode(new Uint8Array(res.body));
+        const parsed = JSON.parse(raw);
+        setEventDetail(parsed);
+        setAmount(parsed.price);
+      }
+    } catch (err) {
+      console.error("Gagal fetch event:", err);
+    }
   }
 
-  // ====== Fetch Caller & Balance ======
-  async function fetchCallerAndBalance(id: Identity) {
+  // ===== Fetch Caller & Balance =====
+  async function fetchCallerAndBalance(actor) {
     try {
-      const agent = new HttpAgent({ identity: id });
-      await agent.fetchRootKey();
-      const actor = createActor("w7lou-c7777-77774-qaamq-cai", { agent });
-
-      const callerRes = await actor.http_request_update({
+      const res = await actor.http_request_update({
         url: "/caller-address",
         method: "GET",
         body: new Uint8Array([]),
         headers: [],
       });
 
-      if (callerRes.status_code === 200) {
-        const addr = new TextDecoder().decode(new Uint8Array(callerRes.body));
+      if (res.status_code === 200) {
+        const addr = new TextDecoder().decode(new Uint8Array(res.body));
         const parsed = JSON.parse(addr);
         const address = parsed.address;
         setCallerAddress(address);
-        await fetchCallerBalance(id, address);
+        await fetchCallerBalance(actor, address);
       }
     } catch (err) {
       console.error("Gagal ambil caller address:", err);
     }
   }
 
-  async function fetchCallerBalance(id: Identity, address: string) {
+  async function fetchCallerBalance(actor, address: string) {
     try {
       setCallerBalance("🔄 Mengambil saldo...");
-      const agent = new HttpAgent({ identity: id });
-      await agent.fetchRootKey();
-      const actor = createActor("w7lou-c7777-77774-qaamq-cai", { agent });
-
       const res = await actor.http_request_update({
         url: `/address-balance?address=${address}`,
         method: "GET",
@@ -87,53 +114,45 @@ function Payment() {
         headers: [],
       });
 
-      if (res.status_code !== 200) {
+      if (res.status_code === 200) {
+        const raw = new TextDecoder().decode(new Uint8Array(res.body));
+        const parsed = JSON.parse(raw);
+        const eth = Number(parsed.balance) / 1e18;
+        setCallerBalance(`💰 Saldo: ${eth} ETH`);
+      } else {
         throw new Error(`Gagal fetch saldo: ${res.status_code}`);
       }
-
-      const raw = new TextDecoder().decode(new Uint8Array(res.body));
-      const parsed = JSON.parse(raw);
-      const eth = Number(parsed.balance) / 1e18;
-      setCallerBalance(`💰 Saldo: ${eth} ETH`);
     } catch (err) {
       console.error(err);
       setCallerBalance("❌ Gagal mengambil saldo");
     }
   }
 
-  // ====== Fetch Canister & Balance ======
-  async function fetchCanisterAndBalance(id: Identity) {
+  // ===== Fetch Canister & Balance =====
+  async function fetchCanisterAndBalance(actor) {
     try {
-      const agent = new HttpAgent({ identity: id });
-      await agent.fetchRootKey();
-      const actor = createActor("w7lou-c7777-77774-qaamq-cai", { agent });
-
-      const canisterRes = await actor.http_request_update({
+      const res = await actor.http_request_update({
         url: "/canister-address",
         method: "GET",
         body: new Uint8Array([]),
         headers: [],
       });
 
-      if (canisterRes.status_code === 200) {
-        const addr = new TextDecoder().decode(new Uint8Array(canisterRes.body));
+      if (res.status_code === 200) {
+        const addr = new TextDecoder().decode(new Uint8Array(res.body));
         const parsed = JSON.parse(addr);
         const address = parsed.address;
         setCanisterAddress(address);
-        await fetchCanisterBalance(id, address);
+        await fetchCanisterBalance(actor, address);
       }
     } catch (err) {
       console.error("Gagal ambil canister address:", err);
     }
   }
 
-  async function fetchCanisterBalance(id: Identity, address: string) {
+  async function fetchCanisterBalance(actor, address: string) {
     try {
       setCanisterBalance("🔄 Mengambil saldo...");
-      const agent = new HttpAgent({ identity: id });
-      await agent.fetchRootKey();
-      const actor = createActor("w7lou-c7777-77774-qaamq-cai", { agent });
-
       const res = await actor.http_request_update({
         url: `/address-balance?address=${address}`,
         method: "GET",
@@ -141,21 +160,21 @@ function Payment() {
         headers: [],
       });
 
-      if (res.status_code !== 200) {
+      if (res.status_code === 200) {
+        const raw = new TextDecoder().decode(new Uint8Array(res.body));
+        const parsed = JSON.parse(raw);
+        const eth = Number(parsed.balance) / 1e18;
+        setCanisterBalance(`💰 Saldo: ${eth} ETH`);
+      } else {
         throw new Error(`Gagal fetch saldo: ${res.status_code}`);
       }
-
-      const raw = new TextDecoder().decode(new Uint8Array(res.body));
-      const parsed = JSON.parse(raw);
-      const eth = Number(parsed.balance) / 1e18;
-      setCanisterBalance(`💰 Saldo: ${eth} ETH`);
     } catch (err) {
       console.error(err);
       setCanisterBalance("❌ Gagal mengambil saldo");
     }
   }
 
-  // ====== Logout ======
+  // ===== Logout =====
   async function logout() {
     const authClient = await AuthClient.create();
     await authClient.logout();
@@ -164,28 +183,22 @@ function Payment() {
     setPaymentStatus("");
   }
 
-  // ====== Payment ======
+  // ===== Payment =====
   async function handlePayment() {
     if (!identity) {
       alert("Login terlebih dahulu sebelum melakukan pembayaran");
       return;
     }
-    if (!amount || isNaN(Number(amount))) {
-      alert("Masukkan jumlah pembayaran yang valid");
-      return;
-    }
 
     try {
       setPaymentStatus("Memproses pembayaran...");
-
       const agent = new HttpAgent({ identity });
       await agent.fetchRootKey();
       const actor = createActor("w7lou-c7777-77774-qaamq-cai", { agent });
 
       const queryParams = new URLSearchParams({
-        to: canisterAddress,
-        value: amount,
-        email: email, // kirim email ke backend
+        eventId: eventId,
+        email: email,
       }).toString();
 
       const res = await actor.http_request_update({
@@ -195,23 +208,24 @@ function Payment() {
         headers: [],
       });
 
-      if (res.status_code !== 200) {
+      if (res.status_code === 200) {
+        const raw = new TextDecoder().decode(new Uint8Array(res.body));
+        const parsed = JSON.parse(raw);
+        const txHash = parsed.txHash;
+        setPaymentStatus(`✅ Pembayaran sukses: ${txHash}`);
+
+        await fetchCallerBalance(actor, callerAddress);
+        await fetchCanisterBalance(actor, canisterAddress);
+      } else {
         throw new Error(`Gagal transfer: ${res.status_code}`);
       }
-      const raw = new TextDecoder().decode(new Uint8Array(res.body));
-      const parsed = JSON.parse(raw);
-      const txHash = parsed.txHash;
-      setPaymentStatus(`✅ Pembayaran sukses: ${txHash}`);
-
-      await fetchCallerBalance(identity, callerAddress);
-      await fetchCanisterBalance(identity, canisterAddress);
     } catch (err) {
       console.error(err);
       setPaymentStatus("❌ Gagal memproses pembayaran");
     }
   }
 
-  // ====== Airdrop ======
+  // ===== Airdrop =====
   async function handleAirdrop() {
     if (!callerAddress) {
       alert("Alamat belum tersedia. Login dulu.");
@@ -236,21 +250,22 @@ function Payment() {
       if (!res.ok) throw new Error(data.error || "Airdrop gagal");
 
       setAirdropStatus(`✅ Airdrop sukses! Tx Hash: ${data.txHash}`);
-      await fetchCallerBalance(identity, callerAddress);
+      const agent = new HttpAgent({ identity });
+      const actor = createActor("w7lou-c7777-77774-qaamq-cai", { agent });
+      await fetchCallerBalance(actor, callerAddress);
     } catch (err) {
       console.error(err);
       setAirdropStatus("❌ Gagal airdrop ETH");
     }
   }
 
-  // ====== Styles ======
+  // ===== Styles =====
   const containerStyle = {
     padding: "30px",
     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
     maxWidth: "600px",
     margin: "0 auto",
   };
-
   const cardStyle = {
     marginBottom: "20px",
     padding: "20px",
@@ -259,7 +274,6 @@ function Payment() {
     backgroundColor: "#fefefe",
     boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
   };
-
   const buttonStyle = {
     padding: "10px 18px",
     border: "none",
@@ -268,27 +282,23 @@ function Payment() {
     fontWeight: "bold",
     transition: "all 0.2s",
   };
-
   const logoutButtonStyle = {
     ...buttonStyle,
     backgroundColor: "#ff4d4f",
     color: "#fff",
     marginTop: "15px",
   };
-
   const paymentButtonStyle = {
     ...buttonStyle,
     backgroundColor: "#52c41a",
     color: "#fff",
   };
-
   const airdropButtonStyle = {
     ...buttonStyle,
     backgroundColor: "#1890ff",
     color: "#fff",
     marginBottom: "10px",
   };
-
   const sectionStyle = { marginBottom: "25px" };
 
   return (
@@ -313,23 +323,31 @@ function Payment() {
             <p>
               <strong>Saldo Pembayaran:</strong> {canisterBalance || "-"}
             </p>
-
             <button style={logoutButtonStyle} onClick={logout}>
               Logout
             </button>
           </div>
 
-          <div style={sectionStyle}>
-            <h2>Airdrop ETH</h2>
-            <button style={airdropButtonStyle} onClick={handleAirdrop}>
-              💸 Airdrop 0.01 ETH
-            </button>
-            <p>{airdropStatus}</p>
-          </div>
+          {eventDetail && (
+            <div style={{ ...cardStyle, backgroundColor: "#e6f7ff" }}>
+              <h2>Detail Event</h2>
+              <p>
+                <strong>Nama Event:</strong> {eventDetail.name}
+              </p>
+              <p>
+                <strong>Tanggal:</strong> {eventDetail.date}
+              </p>
+              <p>
+                <strong>Lokasi:</strong> {eventDetail.location}
+              </p>
+              <p>
+                <strong>Harga:</strong> {eventDetail.price} ETH
+              </p>
+            </div>
+          )}
 
           <div style={{ ...cardStyle, backgroundColor: "#fffbe6" }}>
             <h2>Form Pembayaran</h2>
-
             <label style={{ display: "block", marginBottom: "8px" }}>
               Email untuk notifikasi:
             </label>
@@ -346,7 +364,6 @@ function Payment() {
                 marginBottom: "12px",
               }}
             />
-
             <p>Jumlah: {amount} ETH</p>
             <button style={paymentButtonStyle} onClick={handlePayment}>
               Bayar Sekarang
@@ -354,6 +371,14 @@ function Payment() {
             {paymentStatus && (
               <p style={{ marginTop: "10px" }}>{paymentStatus}</p>
             )}
+          </div>
+
+          <div style={sectionStyle}>
+            <h2>Airdrop ETH</h2>
+            <button style={airdropButtonStyle} onClick={handleAirdrop}>
+              💸 Airdrop 0.01 ETH
+            </button>
+            <p>{airdropStatus}</p>
           </div>
         </>
       ) : (

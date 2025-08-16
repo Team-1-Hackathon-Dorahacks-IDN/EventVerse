@@ -74,20 +74,26 @@ tools = [
             "strict": True
         }
     },
-      {
-        "type": "function",
-        "function": {
-            "name": "payment",
-            "description": "Returns the payment link",
-            "parameters": {
-                "type": "object",
-                "properties": {},
-                "required": [],
-                "additionalProperties": False
+     {
+    "type": "function",
+    "function": {
+        "name": "payment",
+        "description": "Returns the payment link for a given event",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "eventId": {
+                    "type": "string",
+                    "description": "ID of the event to pay for"
+                }
             },
-            "strict": True
-        }
-    },
+            "required": ["eventId"],
+            "additionalProperties": False
+        },
+        "strict": True
+    }
+}
+,
     {
         "type": "function",
         "function": {
@@ -173,8 +179,10 @@ async def call_icp_endpoint(func_name: str, args: dict):
         url = f"{BASE_URL}/events"
         response = requests.get(url, headers=HEADERSUPDATE, json={}, params=args)
     elif func_name == "payment":
-        url = f"{BASE_URL}/payment"
+        event_id = args.get("eventId")
+        url = f"{BASE_URL}/payment/{event_id}"
         response = requests.get(url, headers=HEADERSUPDATE, json={})
+
     elif func_name == "canister_address":
         url = f"{BASE_URL}/canister-address"
         response = requests.get(url, headers=HEADERSUPDATE, json={})

@@ -48,8 +48,8 @@ export function getRouter(): Router {
     // Buat event baru
     router.post(
         '/',
-        (req: Request<any, any, { name: string; date: string; location: string }>, res) => {
-            const { name, date, location } = req.body;
+        (req: Request<any, any, { name: string; date: string; location: string; price: string }>, res) => {
+            const { name, date, location, price } = req.body;
 
             // contoh: buat user organizer dummy
             const user = createUser(db, {
@@ -61,7 +61,8 @@ export function getRouter(): Router {
                 user_id: user.id,
                 name,
                 date,
-                location
+                location,
+                price
             });
 
             res.json(event);
@@ -78,11 +79,12 @@ export function getRouter(): Router {
                 age: 25 + i
             });
 
-            createEvent(db, {
+              createEvent(db, {
                 user_id: user.id,
                 name: `Event ${v4()}`,
                 date: `2025-08-${String(10 + i).padStart(2, '0')}`,
-                location: `Location ${i}`
+                location: `Location ${i}`,
+                price: (0.01 * (i + 1)).toFixed(2)  // "0.01", "0.02", ..., "0.10", "0.11", ...
             });
         }
 
