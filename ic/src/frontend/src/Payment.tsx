@@ -4,7 +4,6 @@ import { Identity, HttpAgent } from "@dfinity/agent";
 import { AuthClient } from "@dfinity/auth-client";
 import { createActor } from "../../declarations/backend";
 import { useParams } from "react-router-dom";
-import "./Payment.css"; // we'll define hover styles here
 
 function Payment() {
   const { eventId } = useParams();
@@ -18,7 +17,8 @@ function Payment() {
   const [airdropStatus, setAirdropStatus] = useState("");
   const [email, setEmail] = useState("");
   const [eventDetail, setEventDetail] = useState(null);
-
+  const [isLightMode, setIsLightMode] = useState(true);
+  const toggleTheme = () => setIsLightMode((prev) => !prev);
   useEffect(() => {
     authenticateAndFetch();
   }, []);
@@ -250,33 +250,34 @@ function Payment() {
     }
   }
 
-  const containerStyle = {
-    padding: "30px",
-    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-    maxWidth: "600px",
-    margin: "0 auto",
-    backgroundColor: "var(--primary-color)",
-    color: "var(--text-color)",
-    minHeight: "100vh",
-  };
-
-  const cardStyle = {
-    marginBottom: "20px",
-    padding: "20px",
-    borderRadius: "12px",
-    backgroundColor: "var(--secondary-color)",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.5)",
-  };
-
-  const sectionStyle = { marginBottom: "25px" };
-
   return (
-    <div style={containerStyle}>
-      <h1 style={{ marginBottom: "25px" }}>💳 Halaman Pembayaran</h1>
+    <div
+      className={`${
+        isLightMode ? "bg-gray-100 text-gray-900" : "bg-gray-900 text-gray-100"
+      } min-h-screen p-6 transition-colors duration-300`}
+    >
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">💳 Halaman Pembayaran</h1>
+        <button
+          onClick={toggleTheme}
+          className={`px-4 py-2 rounded-lg transition-colors duration-300 ${
+            isLightMode
+              ? "bg-gray-300 text-gray-900"
+              : "bg-gray-800 text-gray-100"
+          }`}
+        >
+          {isLightMode ? "Dark Mode" : "Light Mode"}
+        </button>
+      </div>
 
       {identity ? (
         <>
-          <div style={cardStyle}>
+          {/* Info Principal & Saldo */}
+          <div
+            className={`p-6 rounded-xl shadow mb-6 transition-colors duration-300 ${
+              isLightMode ? "bg-white shadow-md" : "bg-gray-800 shadow-lg"
+            }`}
+          >
             <p>
               <strong>Principal:</strong> {identity.getPrincipal().toString()}
             </p>
@@ -292,14 +293,22 @@ function Payment() {
             <p>
               <strong>Saldo Pembayaran:</strong> {canisterBalance || "-"}
             </p>
-            <button className="btn logout" onClick={logout}>
+            <button
+              onClick={logout}
+              className="mt-4 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition"
+            >
               Logout
             </button>
           </div>
 
+          {/* Detail Event */}
           {eventDetail && (
-            <div style={{ ...cardStyle, backgroundColor: "#2a2a2a" }}>
-              <h2 style={{ color: "var(--subheading-color)" }}>Detail Event</h2>
+            <div
+              className={`p-6 rounded-xl shadow mb-6 transition-colors duration-300 ${
+                isLightMode ? "bg-white shadow-md" : "bg-gray-800 shadow-lg"
+              }`}
+            >
+              <h2 className="text-xl font-semibold mb-2">Detail Event</h2>
               <p>
                 <strong>Nama Event:</strong> {eventDetail.name}
               </p>
@@ -315,43 +324,49 @@ function Payment() {
             </div>
           )}
 
-          <div style={{ ...cardStyle, backgroundColor: "#2a2a2a" }}>
-            <h2 style={{ color: "var(--subheading-color)" }}>
-              Form Pembayaran
-            </h2>
-            <label style={{ display: "block", marginBottom: "8px" }}>
-              Email untuk notifikasi:
-            </label>
+          {/* Form Pembayaran */}
+          <div
+            className={`p-6 rounded-xl shadow mb-6 transition-colors duration-300 ${
+              isLightMode ? "bg-white shadow-md" : "bg-gray-800 shadow-lg"
+            }`}
+          >
+            <h2 className="text-xl font-semibold mb-2">Form Pembayaran</h2>
+            <label className="block mb-2">Email untuk notifikasi:</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              style={{
-                width: "100%",
-                padding: "10px",
-                borderRadius: "6px",
-                border: "1px solid #555",
-                backgroundColor: "#1f1f1f",
-                color: "var(--text-color)",
-                marginBottom: "12px",
-              }}
+              className={`w-full p-3 rounded-lg mb-4 border focus:outline-none transition-colors duration-300 ${
+                isLightMode
+                  ? "bg-gray-100 border-gray-300 text-gray-900 focus:ring-2 focus:ring-indigo-500"
+                  : "bg-gray-700 border-gray-600 text-gray-100 focus:ring-2 focus:ring-indigo-400"
+              }`}
             />
-            <p>Jumlah: {amount} ETH</p>
-            <button className="btn payment" onClick={handlePayment}>
+            <p className="mb-2">Jumlah: {amount} ETH</p>
+            <button
+              onClick={handlePayment}
+              className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition"
+            >
               Bayar Sekarang
             </button>
-            {paymentStatus && (
-              <p style={{ marginTop: "10px" }}>{paymentStatus}</p>
-            )}
+            {paymentStatus && <p className="mt-2">{paymentStatus}</p>}
           </div>
 
-          <div style={sectionStyle}>
-            <h2 style={{ color: "var(--subheading-color)" }}>Airdrop ETH</h2>
-            <button className="btn airdrop" onClick={handleAirdrop}>
+          {/* Airdrop */}
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold mb-2">Airdrop ETH</h2>
+            <button
+              onClick={handleAirdrop}
+              className={`px-4 py-2 rounded-lg transition ${
+                isLightMode
+                  ? "bg-yellow-400 hover:bg-yellow-500 text-gray-900"
+                  : "bg-yellow-700 hover:bg-yellow-600 text-gray-100"
+              }`}
+            >
               💸 Airdrop 0.01 ETH
             </button>
-            <p>{airdropStatus}</p>
+            <p className="mt-2">{airdropStatus}</p>
           </div>
         </>
       ) : (
