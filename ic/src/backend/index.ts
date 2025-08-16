@@ -1,6 +1,6 @@
 import { canisterSelf, msgCaller, StableBTreeMap, stableJson } from "azle";
 import { bitcoin_network } from "azle/canisters/management/idl";
-import { ic,  postUpgrade, preUpgrade, query, Server, text, ThresholdWallet } from 'azle/experimental';
+import { ic,jsonStringify,  postUpgrade, preUpgrade, query, Server, text, ThresholdWallet } from 'azle/experimental';
 import { ethers } from 'ethers';
 import express, { Request } from "express";
 import {  initDb } from './db';
@@ -195,46 +195,40 @@ app.post(
 
 
 
-app.post(
-  '/payout',
-  async (req: Request<any, any, { to: string; value: string }>, res) => {
+app.get('/payout', async (req: Request, res) => {
+  try {
+    // Ambil parameter dari query string
+    const to = req.query.to as string;
+    const valueStr = req.query.value as string;
 
-   try{
-          ic.setOutgoingHttpOptions({
-                    cycles: 200_850_523_200n
-                });
-             
-    const wallet = new ThresholdWallet(
-        {
-            derivationPath: [msgCaller().toUint8Array()],
-            keyId:{
-              curve:'secp256k1',
-              name:'dfx_test_key' 
-            }
-        },
-        ethers.getDefaultProvider('https://sepolia.base.org')
-    );
-   
-      const to = "0x9D3Ebc31d7cdD004a6B4529EB86cc782235868E7";
-            const value = ethers.parseEther("0.01");
-            const gasLimit = 21_000n;
-  
-      const tx = await wallet.sendTransaction({
-             to,
-                value,
-                gasLimit
-      });
-
-     res.json({ message: 'Transaction sent', txHash: tx.hash });
-    }catch(error:any){
-       console.error('Transaction failed:', error);
-      res.status(500).json({
-        error: 'Failed to send transaction',
-        details: error.message || 'Unknown error',
-      });
+    if (!to || !valueStr) {
+      return res.status(400).json({ error: "Missing 'to' or 'value' query parameter" });
     }
+
+    // Convert ETH string ke Wei
+    const value = ethers.parseEther(valueStr);
+    const gasLimit = 21_000n;
+
+    ic.setOutgoingHttpOptions({ cycles: 200_850_523_200n });
+
+    const wallet = new ThresholdWallet(
+      {
+        derivationPath: [msgCaller().toUint8Array()],
+      },
+      ethers.getDefaultProvider('https://sepolia.base.org')
+    );
+
+    const tx = await wallet.sendTransaction({ to, value, gasLimit });
+
+    res.json({ message: "Transaction sent", txHash: tx.hash });
+  } catch (error: any) {
+    console.error("Transaction failed:", error);
+    res.status(500).json({
+      error: "Failed to send transaction",
+      details: error.message || "Unknown error",
+    });
   }
-);
+});
 
 /// Dummy: Returns the UTXOs of a given Bitcoin address.
 app.post("/get-utxos", async (req: Request, res) => {
