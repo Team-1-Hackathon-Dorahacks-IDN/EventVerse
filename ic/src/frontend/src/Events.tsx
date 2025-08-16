@@ -20,7 +20,6 @@ export default function EventsPage() {
     location: "",
     price: "",
   });
-
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editEventData, setEditEventData] = useState({
     name: "",
@@ -28,6 +27,10 @@ export default function EventsPage() {
     location: "",
     price: "",
   });
+
+  // Light / Dark mode state
+  const [isLightMode, setIsLightMode] = useState(true);
+  const toggleTheme = () => setIsLightMode((prev) => !prev);
 
   useEffect(() => {
     fetch("http://w7lou-c7777-77774-qaamq-cai.raw.localhost:4943/events")
@@ -105,51 +108,76 @@ export default function EventsPage() {
 
   if (loading)
     return (
-      <div className="text-center text-gray-400 mt-20 text-lg">Loading...</div>
+      <div
+        className={`text-center mt-20 text-lg ${
+          isLightMode ? "text-gray-600" : "text-gray-400"
+        }`}
+      >
+        Loading...
+      </div>
     );
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <h1 className="text-3xl font-bold text-center mb-8">Events</h1>
+    <div
+      className={`min-h-screen p-6 ${
+        isLightMode ? "bg-gray-100 text-gray-900" : "bg-gray-900 text-gray-100"
+      }`}
+    >
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-center flex-1">Events</h1>
+        <button
+          className={`ml-4 px-4 py-2 rounded-md font-semibold transition ${
+            isLightMode
+              ? "bg-gray-200 text-gray-800 hover:bg-gray-300"
+              : "bg-gray-800 text-gray-200 hover:bg-gray-700"
+          }`}
+          onClick={toggleTheme}
+        >
+          {isLightMode ? "Dark Mode" : "Light Mode"}
+        </button>
+      </div>
 
       {/* Add New Event */}
-      <div className="bg-gray-800 p-6 rounded-xl shadow-md mb-8">
-        <h2 className="text-xl text-gray-300 mb-4">Add New Event</h2>
+      <div
+        className={`p-6 rounded-xl shadow-md mb-8 ${
+          isLightMode ? "bg-white" : "bg-gray-800"
+        }`}
+      >
+        <h2
+          className={`text-xl mb-4 ${
+            isLightMode ? "text-gray-700" : "text-gray-200"
+          }`}
+        >
+          Add New Event
+        </h2>
         <div className="flex flex-wrap gap-4 mb-4">
-          <input
-            type="text"
-            placeholder="Name"
-            className="flex-1 p-2 rounded-md bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            value={newEvent.name}
-            onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })}
-          />
-          <input
-            type="date"
-            className="flex-1 p-2 rounded-md bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            value={newEvent.date}
-            onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
-          />
-          <input
-            type="text"
-            placeholder="Location"
-            className="flex-1 p-2 rounded-md bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            value={newEvent.location}
-            onChange={(e) =>
-              setNewEvent({ ...newEvent, location: e.target.value })
-            }
-          />
-          <input
-            type="text"
-            placeholder="Price (ETH)"
-            className="flex-1 p-2 rounded-md bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            value={newEvent.price}
-            onChange={(e) =>
-              setNewEvent({ ...newEvent, price: e.target.value })
-            }
-          />
+          {["name", "date", "location", "price"].map((key) => (
+            <input
+              key={key}
+              type={key === "date" ? "date" : "text"}
+              placeholder={
+                key === "price"
+                  ? "Price (ETH)"
+                  : key.charAt(0).toUpperCase() + key.slice(1)
+              }
+              className={`flex-1 p-2 rounded-md border focus:outline-none focus:ring-2 ${
+                isLightMode
+                  ? "bg-gray-100 border-gray-300 text-gray-900 focus:ring-indigo-500"
+                  : "bg-gray-700 border-gray-600 text-gray-100 focus:ring-indigo-400"
+              }`}
+              value={newEvent[key as keyof typeof newEvent]}
+              onChange={(e) =>
+                setNewEvent({ ...newEvent, [key]: e.target.value })
+              }
+            />
+          ))}
         </div>
         <button
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-md transition"
+          className={`font-semibold py-2 px-4 rounded-md transition ${
+            isLightMode
+              ? "bg-indigo-600 hover:bg-indigo-700 text-white"
+              : "bg-indigo-500 hover:bg-indigo-600 text-gray-100"
+          }`}
           onClick={handleAddEvent}
         >
           Add
@@ -161,48 +189,30 @@ export default function EventsPage() {
         {events.map((event) => (
           <li
             key={event.id}
-            className="bg-gray-800 p-4 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center shadow"
+            className={`p-4 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center shadow ${
+              isLightMode ? "bg-white" : "bg-gray-800"
+            }`}
           >
             {editingId === event.id ? (
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full">
-                <input
-                  type="text"
-                  value={editEventData.name}
-                  className="p-2 rounded-md bg-gray-700 border border-gray-600 text-white flex-1"
-                  onChange={(e) =>
-                    setEditEventData({ ...editEventData, name: e.target.value })
-                  }
-                />
-                <input
-                  type="date"
-                  value={editEventData.date}
-                  className="p-2 rounded-md bg-gray-700 border border-gray-600 text-white flex-1"
-                  onChange={(e) =>
-                    setEditEventData({ ...editEventData, date: e.target.value })
-                  }
-                />
-                <input
-                  type="text"
-                  value={editEventData.location}
-                  className="p-2 rounded-md bg-gray-700 border border-gray-600 text-white flex-1"
-                  onChange={(e) =>
-                    setEditEventData({
-                      ...editEventData,
-                      location: e.target.value,
-                    })
-                  }
-                />
-                <input
-                  type="text"
-                  value={editEventData.price}
-                  className="p-2 rounded-md bg-gray-700 border border-gray-600 text-white flex-1"
-                  onChange={(e) =>
-                    setEditEventData({
-                      ...editEventData,
-                      price: e.target.value,
-                    })
-                  }
-                />
+                {["name", "date", "location", "price"].map((key) => (
+                  <input
+                    key={key}
+                    type={key === "date" ? "date" : "text"}
+                    value={editEventData[key as keyof typeof editEventData]}
+                    className={`p-2 rounded-md border flex-1 ${
+                      isLightMode
+                        ? "bg-gray-100 border-gray-300 text-gray-900"
+                        : "bg-gray-700 border-gray-600 text-gray-100"
+                    }`}
+                    onChange={(e) =>
+                      setEditEventData({
+                        ...editEventData,
+                        [key]: e.target.value,
+                      })
+                    }
+                  />
+                ))}
                 <div className="flex gap-2 mt-2 sm:mt-0">
                   <button
                     className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md transition"
@@ -220,7 +230,7 @@ export default function EventsPage() {
               </div>
             ) : (
               <div className="w-full flex flex-col sm:flex-row sm:justify-between sm:items-center">
-                <div className="text-white mb-2 sm:mb-0">
+                <div className="mb-2 sm:mb-0">
                   <strong>{event.name}</strong> <br />
                   {event.date} — {event.location} — {event.price} ETH
                 </div>
