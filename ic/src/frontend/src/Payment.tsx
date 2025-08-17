@@ -176,7 +176,7 @@ function Payment() {
     setPaymentStatus("");
   }
 
-  async function handlePayment() {
+  async function handlePayment(email: string) {
     if (!identity) {
       alert("Login terlebih dahulu sebelum melakukan pembayaran");
       return;
@@ -185,7 +185,7 @@ function Payment() {
     try {
       setPaymentStatus("Memproses pembayaran...");
       const agent = new HttpAgent({ identity });
-      await agent.fetchRootKey();
+
       const actor = createActor("w7lou-c7777-77774-qaamq-cai", { agent });
 
       const queryParams = new URLSearchParams({
@@ -194,9 +194,9 @@ function Payment() {
       }).toString();
 
       const res = await actor.http_request_update({
-        url: `/payout?${queryParams}`,
-        method: "GET",
-        body: new TextEncoder().encode(JSON.stringify({ eventId })),
+        url: `/payments/payout?${queryParams}`,
+        method: "POST",
+        body: new TextEncoder().encode(JSON.stringify({ email })),
         headers: [],
       });
 
@@ -348,7 +348,7 @@ function Payment() {
             />
             <p className="mb-2">Jumlah: {amount} ETH</p>
             <button
-              onClick={handlePayment}
+              onClick={() => handlePayment(email)}
               className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition"
             >
               Bayar Sekarang

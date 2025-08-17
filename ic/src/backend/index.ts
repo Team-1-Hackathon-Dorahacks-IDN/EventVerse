@@ -1,5 +1,4 @@
 import { canisterSelf, msgCaller, Principal, setTimer, StableBTreeMap, stableJson } from "azle";
-import { bitcoin_network } from "azle/canisters/management/idl";
 import { ic,jsonStringify,  postUpgrade, preUpgrade, query, Server, text, ThresholdWallet } from 'azle/experimental';
 import { ethers } from 'ethers';
 import express, { Request } from "express";
@@ -9,6 +8,7 @@ import { init } from 'azle/experimental';
 import { getRouter as getRouterPosts } from './entities/posts/router';
 import { getRouter as getRouterUsers } from './entities/users/router';
 import { getRouter as getRouterEvents } from './entities/events/router';
+import { getRouter as getRouterPayments } from './entities/payments/router';
 import { getEvent, updateEvent } from "./entities/events/db";
 
 export let owner: Principal;
@@ -26,6 +26,7 @@ app.use(express.json());
   app.use('/users', getRouterUsers());
         app.use('/posts', getRouterPosts());
            app.use('/events', getRouterEvents());
+            app.use('/payments', getRouterPayments());
 
    app.get('/init-called', (_req, res) => {
             res.json(globalThis._azleInitCalled);
@@ -187,81 +188,7 @@ app.post(
 
 
 
-app.get('/payout', async (req: Request, res) => {
-  try {
-    console.log("body",req.body)
-    const email = req.query.email as string;
-    const eventId = req.query.eventId as string;
 
-    if (!eventId) {
-      return res.status(400).json({ error: "Missing 'eventId' query parameter" });
-    }
-
-    // 1. Ambil event
-    const event = getEvent(db, Number(eventId));
-    if (!event) {
-      return res.status(404).json({ error: "Event not found" });
-    }
-
-    // 2. Cek kapasitas
-    if (event.booked_count >= event.capacity) {
-      return res.status(400).json({ error: "Event is fully booked" });
-    }
-
-    // 3. Ambil harga
-    const valueStr = event.price?.toString();
-    if (!valueStr) {
-      return res.status(400).json({ error: "Event has no price set" });
-    }
-
-    const value = ethers.parseEther(valueStr);
-    const gasLimit = 21_000n;
-
-    ic.setOutgoingHttpOptions({ cycles: 200_850_523_200n });
-
-    // Wallet pengirim
-    const wallet = new ThresholdWallet(
-      { derivationPath: [msgCaller().toUint8Array()] },
-      ethers.getDefaultProvider('https://sepolia.base.org')
-    );
-
-    // Wallet penerima
-    const walletPayment = new ThresholdWallet(
-      { derivationPath: [canisterSelf().toUint8Array()] },
-      ethers.getDefaultProvider('https://sepolia.base.org')
-    );
-
-    const to = await walletPayment.getAddress();
-
-    // 4. Kirim transaksi
-    const tx = await wallet.sendTransaction({ to, value, gasLimit });
-
-    // 5. Update booked_count
-    updateEvent(db, { id: event.id, booked_count: event.booked_count + 1 });
-
-    // 6. Kirim notifikasi jika ada email
-    if (email) {
-      setTimer(10, () => {
-        sendNotification(to, eventId, tx.hash, email);
-      });
-    }
-
-    res.json({
-      message: "Transaction sent",
-      txHash: tx.hash,
-      eventId,
-      amount: valueStr,
-      bookedCount: event.booked_count + 1
-    });
-
-  } catch (error: any) {
-    console.error("Transaction failed:", error);
-    res.status(500).json({
-      error: "Failed to send transaction",
-      details: error.message || "Unknown error",
-    });
-  }
-});
 
 
 
@@ -294,16 +221,3 @@ return app.listen();
 
 )
 
-function sendNotification(
-  to: string,
-  eventId: string,
-  txHash?: string,
-  email?: string
-) {
-  console.log("=== Notifikasi ===");
-  console.log(`Event ID: ${eventId}`);
-  console.log(`Tujuan transaksi: ${to}`);
-  if (txHash) console.log(`Tx Hash: ${txHash}`);
-  if (email) console.log(`Email notifikasi: ${email}`);
-  console.log("=================");
-}
