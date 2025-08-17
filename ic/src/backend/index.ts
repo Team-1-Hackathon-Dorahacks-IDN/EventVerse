@@ -11,10 +11,7 @@ import { getRouter as getRouterUsers } from './entities/users/router';
 import { getRouter as getRouterEvents } from './entities/events/router';
 import { getEvent, updateEvent } from "./entities/events/db";
 
-// Dummy values instead of real Bitcoin interactions
-const NETWORK: bitcoin_network = { testnet: null };
-const DERIVATION_PATH: Uint8Array[] = [];
-const KEY_NAME: string = "test_key_1";
+
 let stableDbMap = new StableBTreeMap<'DATABASE', Uint8Array>(0, stableJson, {
     toBytes: (data: Uint8Array): Uint8Array => data,
     fromBytes: (bytes): Uint8Array => bytes
@@ -289,15 +286,6 @@ return app.listen();
     }
 
 )
-export function determineKeyName(network: bitcoin_network): string {
-  return "test_key_1"; // always return dummy key
-}
-
-export function determineNetwork(
-  networkName?: string,
-): bitcoin_network | undefined {
-  return { testnet: null }; // always return dummy network
-}
 
 function sendNotification(
   to: string,
