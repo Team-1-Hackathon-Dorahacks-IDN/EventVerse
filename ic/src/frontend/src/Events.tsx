@@ -9,23 +9,29 @@ interface Event {
   date: string;
   location: string;
   price: string;
+  capacity: number; // Tambahkan capacity
+  booked_count: number; // Menampilkan booked slots
 }
 
 export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+
   const [newEvent, setNewEvent] = useState({
     name: "",
     date: "",
     location: "",
     price: "",
+    capacity: 0, // Tambahkan capacity
   });
+
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editEventData, setEditEventData] = useState({
     name: "",
     date: "",
     location: "",
     price: "",
+    capacity: 0,
   });
 
   // Light / Dark mode state
@@ -33,41 +39,37 @@ export default function EventsPage() {
   const toggleTheme = () => setIsLightMode((prev) => !prev);
 
   useEffect(() => {
-    fetch("http://w7lou-c7777-77774-qaamq-cai.raw.localhost:4943/events")
+    fetch("http://localhost:4943/events")
       .then((res) => res.json())
       .then((data: Event[]) => setEvents(data))
       .finally(() => setLoading(false));
   }, []);
 
+  // Tambah event baru
   const handleAddEvent = async () => {
     try {
-      const res = await fetch(
-        "http://w7lou-c7777-77774-qaamq-cai.raw.localhost:4943/events",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(newEvent),
-        }
-      );
+      const res = await fetch("http://localhost:4943/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newEvent),
+      });
       const createdEvent: Event = await res.json();
       setEvents((prev) => [...prev, createdEvent]);
-      setNewEvent({ name: "", date: "", location: "", price: "" });
+      setNewEvent({ name: "", date: "", location: "", price: "", capacity: 0 });
     } catch (err) {
       console.error(err);
       alert("Gagal menambahkan event");
     }
   };
 
+  // Hapus event
   const handleDelete = async (id: number) => {
     try {
-      await fetch(
-        "http://w7lou-c7777-77774-qaamq-cai.raw.localhost:4943/events",
-        {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id }),
-        }
-      );
+      await fetch("http://localhost:4943/events", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
       setEvents((prev) => prev.filter((e) => e.id !== id));
     } catch (err) {
       console.error(err);
@@ -75,6 +77,7 @@ export default function EventsPage() {
     }
   };
 
+  // Mulai edit
   const startEdit = (event: Event) => {
     setEditingId(event.id);
     setEditEventData({
@@ -82,21 +85,21 @@ export default function EventsPage() {
       date: event.date,
       location: event.location,
       price: event.price,
+      capacity: event.capacity,
     });
   };
 
+  // Cancel edit
   const cancelEdit = () => setEditingId(null);
 
+  // Save edit
   const saveEdit = async (id: number) => {
     try {
-      const res = await fetch(
-        "http://w7lou-c7777-77774-qaamq-cai.raw.localhost:4943/events",
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id, ...editEventData }),
-        }
-      );
+      const res = await fetch("http://localhost:4943/events", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, ...editEventData }),
+      });
       const updatedEvent: Event = await res.json();
       setEvents((prev) => prev.map((e) => (e.id === id ? updatedEvent : e)));
       setEditingId(null);
@@ -123,6 +126,7 @@ export default function EventsPage() {
         isLightMode ? "bg-gray-100 text-gray-900" : "bg-gray-900 text-gray-100"
       }`}
     >
+      {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-center flex-1">Events</h1>
         <button
@@ -151,13 +155,17 @@ export default function EventsPage() {
           Add New Event
         </h2>
         <div className="flex flex-wrap gap-4 mb-4">
-          {["name", "date", "location", "price"].map((key) => (
+          {["name", "date", "location", "price", "capacity"].map((key) => (
             <input
               key={key}
-              type={key === "date" ? "date" : "text"}
+              type={
+                key === "date" ? "date" : key === "capacity" ? "number" : "text"
+              }
               placeholder={
                 key === "price"
                   ? "Price (ETH)"
+                  : key === "capacity"
+                  ? "Capacity"
                   : key.charAt(0).toUpperCase() + key.slice(1)
               }
               className={`flex-1 p-2 rounded-md border focus:outline-none focus:ring-2 ${
@@ -167,7 +175,13 @@ export default function EventsPage() {
               }`}
               value={newEvent[key as keyof typeof newEvent]}
               onChange={(e) =>
-                setNewEvent({ ...newEvent, [key]: e.target.value })
+                setNewEvent({
+                  ...newEvent,
+                  [key]:
+                    key === "capacity"
+                      ? Number(e.target.value)
+                      : e.target.value,
+                })
               }
             />
           ))}
@@ -195,24 +209,35 @@ export default function EventsPage() {
           >
             {editingId === event.id ? (
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full">
-                {["name", "date", "location", "price"].map((key) => (
-                  <input
-                    key={key}
-                    type={key === "date" ? "date" : "text"}
-                    value={editEventData[key as keyof typeof editEventData]}
-                    className={`p-2 rounded-md border flex-1 ${
-                      isLightMode
-                        ? "bg-gray-100 border-gray-300 text-gray-900"
-                        : "bg-gray-700 border-gray-600 text-gray-100"
-                    }`}
-                    onChange={(e) =>
-                      setEditEventData({
-                        ...editEventData,
-                        [key]: e.target.value,
-                      })
-                    }
-                  />
-                ))}
+                {["name", "date", "location", "price", "capacity"].map(
+                  (key) => (
+                    <input
+                      key={key}
+                      type={
+                        key === "date"
+                          ? "date"
+                          : key === "capacity"
+                          ? "number"
+                          : "text"
+                      }
+                      value={editEventData[key as keyof typeof editEventData]}
+                      className={`p-2 rounded-md border flex-1 ${
+                        isLightMode
+                          ? "bg-gray-100 border-gray-300 text-gray-900"
+                          : "bg-gray-700 border-gray-600 text-gray-100"
+                      }`}
+                      onChange={(e) =>
+                        setEditEventData({
+                          ...editEventData,
+                          [key]:
+                            key === "capacity"
+                              ? Number(e.target.value)
+                              : e.target.value,
+                        })
+                      }
+                    />
+                  )
+                )}
                 <div className="flex gap-2 mt-2 sm:mt-0">
                   <button
                     className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md transition"
@@ -232,7 +257,8 @@ export default function EventsPage() {
               <div className="w-full flex flex-col sm:flex-row sm:justify-between sm:items-center">
                 <div className="mb-2 sm:mb-0">
                   <strong>{event.name}</strong> <br />
-                  {event.date} — {event.location} — {event.price} ETH
+                  {event.date} — {event.location} — {event.price} ETH <br />
+                  Capacity: {event.booked_count}/{event.capacity}
                 </div>
                 <div className="flex gap-2">
                   <button
