@@ -1,5 +1,3 @@
-
-````markdown
 # Eventverse
 
 Eventverse is an AI-powered event management agent built on the Internet Computer (ICP). It leverages **ASI1 AI API** for natural language understanding and **ICP canisters** for managing events. Users can query events, get event details, generate payment links, and interact via both REST API and chat protocols.
@@ -24,7 +22,7 @@ Eventverse is an AI-powered event management agent built on the Internet Compute
 - `.env` file with the following key:
   ```text
   ASI1_API_KEY=your_asi1_api_key_here
-````
+
 
 * Installed Python packages:
 
