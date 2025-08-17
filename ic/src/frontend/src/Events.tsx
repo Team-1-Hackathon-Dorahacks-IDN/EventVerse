@@ -1,6 +1,9 @@
 // src/pages/Events.tsx
 // @ts-nocheck
 import React, { useEffect, useState } from "react";
+import { Identity, HttpAgent } from "@dfinity/agent";
+import { AuthClient } from "@dfinity/auth-client";
+import { createActor } from "../../declarations/backend";
 
 interface Event {
   id: number;
@@ -9,11 +12,12 @@ interface Event {
   date: string;
   location: string;
   price: string;
-  capacity: number; // Tambahkan capacity
-  booked_count: number; // Menampilkan booked slots
+  capacity: number;
+  booked_count: number;
 }
 
 export default function EventsPage() {
+  const [identity, setIdentity] = useState<Identity | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -22,7 +26,7 @@ export default function EventsPage() {
     date: "",
     location: "",
     price: "",
-    capacity: 0, // Tambahkan capacity
+    capacity: 0,
   });
 
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -34,80 +38,127 @@ export default function EventsPage() {
     capacity: 0,
   });
 
-  // Light / Dark mode state
   const [isLightMode, setIsLightMode] = useState(true);
   const toggleTheme = () => setIsLightMode((prev) => !prev);
 
   useEffect(() => {
-    fetch("http://localhost:4943/events")
-      .then((res) => res.json())
-      .then((data: Event[]) => setEvents(data))
-      .finally(() => setLoading(false));
+    authenticateAndFetch();
   }, []);
 
-  // Tambah event baru
-  const handleAddEvent = async () => {
+  async function authenticateAndFetch() {
     try {
-      const res = await fetch("http://localhost:4943/events", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newEvent),
+      const authClient = await AuthClient.create();
+      let id: Identity;
+
+      if (await authClient.isAuthenticated()) {
+        id = authClient.getIdentity();
+      } else {
+        await new Promise((resolve, reject) => {
+          authClient.login({
+            identityProvider: import.meta.env.VITE_IDENTITY_PROVIDER,
+            onSuccess: resolve,
+            onError: reject,
+            windowOpenerFeatures: `width=500,height=500`,
+          });
+        });
+        id = authClient.getIdentity();
+      }
+
+      setIdentity(id);
+
+      const agent = new HttpAgent({ identity: id });
+      await agent.fetchRootKey();
+      const actor = createActor("w7lou-c7777-77774-qaamq-cai", { agent });
+
+      fetchEvents(actor);
+    } catch (err) {
+      console.error("Authentication/Fetch error:", err);
+    }
+  }
+
+  async function fetchEvents(actor) {
+    setLoading(true);
+    try {
+      const res = await actor.http_request_update({
+        url: "/events",
+        method: "GET",
+        body: new Uint8Array([]),
+        headers: [],
       });
-      const createdEvent: Event = await res.json();
-      setEvents((prev) => [...prev, createdEvent]);
-      setNewEvent({ name: "", date: "", location: "", price: "", capacity: 0 });
+
+      if (res.status_code === 200) {
+        const raw = new TextDecoder().decode(new Uint8Array(res.body));
+        const data = JSON.parse(raw);
+        setEvents(data);
+      } else {
+        throw new Error(`Gagal fetch events: ${res.status_code}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Gagal fetch events");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleAddEvent() {
+    if (!identity) return alert("Login terlebih dahulu");
+
+    try {
+      const agent = new HttpAgent({ identity });
+      const actor = createActor("w7lou-c7777-77774-qaamq-cai", { agent });
+
+      const res = await actor.http_request_update({
+        url: "/events",
+        method: "POST",
+        body: new TextEncoder().encode(JSON.stringify(newEvent)),
+        headers: [],
+      });
+
+      if (res.status_code === 200) {
+        const raw = new TextDecoder().decode(new Uint8Array(res.body));
+        const createdEvent = JSON.parse(raw);
+        setEvents((prev) => [...prev, createdEvent]);
+        setNewEvent({
+          name: "",
+          date: "",
+          location: "",
+          price: "",
+          capacity: 0,
+        });
+      } else {
+        throw new Error(`Gagal menambahkan event: ${res.status_code}`);
+      }
     } catch (err) {
       console.error(err);
       alert("Gagal menambahkan event");
     }
-  };
+  }
 
-  // Hapus event
-  const handleDelete = async (id: number) => {
+  async function handleDelete(id: number) {
+    if (!identity) return alert("Login terlebih dahulu");
+
     try {
-      await fetch("http://localhost:4943/events", {
+      const agent = new HttpAgent({ identity });
+      const actor = createActor("w7lou-c7777-77774-qaamq-cai", { agent });
+
+      const res = await actor.http_request_update({
+        url: "/events",
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
+        body: new TextEncoder().encode(JSON.stringify({ id })),
+        headers: [],
       });
-      setEvents((prev) => prev.filter((e) => e.id !== id));
+
+      if (res.status_code === 200) {
+        setEvents((prev) => prev.filter((e) => e.id !== id));
+      } else {
+        throw new Error(`Gagal hapus event: ${res.status_code}`);
+      }
     } catch (err) {
       console.error(err);
       alert("Gagal menghapus event");
     }
-  };
-
-  // Mulai edit
-  const startEdit = (event: Event) => {
-    setEditingId(event.id);
-    setEditEventData({
-      name: event.name,
-      date: event.date,
-      location: event.location,
-      price: event.price,
-      capacity: event.capacity,
-    });
-  };
-
-  // Cancel edit
-  const cancelEdit = () => setEditingId(null);
-
-  // Save edit
-  const saveEdit = async (id: number) => {
-    try {
-      const res = await fetch("http://localhost:4943/events", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, ...editEventData }),
-      });
-      const updatedEvent: Event = await res.json();
-      setEvents((prev) => prev.map((e) => (e.id === id ? updatedEvent : e)));
-      setEditingId(null);
-    } catch (err) {
-      console.error(err);
-      alert("Gagal mengupdate event");
-    }
-  };
+  }
 
   if (loading)
     return (
@@ -120,6 +171,12 @@ export default function EventsPage() {
       </div>
     );
 
+  if (!identity)
+    return (
+      <div className="text-center mt-20">
+        🔑 Silakan login menggunakan Internet Identity...
+      </div>
+    );
   return (
     <div
       className={`min-h-screen p-6 ${
