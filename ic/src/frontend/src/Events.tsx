@@ -196,6 +196,17 @@ export default function EventsPage() {
         >
           {isLightMode ? "Dark Mode" : "Light Mode"}
         </button>
+        <button
+          className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition"
+          onClick={async () => {
+            const authClient = await AuthClient.create();
+            await authClient.logout();
+            setIdentity(null);
+            setEvents([]);
+          }}
+        >
+          Logout
+        </button>
       </div>
 
       {/* Add New Event */}
