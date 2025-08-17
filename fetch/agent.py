@@ -130,93 +130,16 @@ tools = [
         "strict": True
     }
 }
-,
-    {
-        "type": "function",
-        "function": {
-            "name": "get_current_fee_percentiles",
-            "description": "Gets the 100 fee percentiles measured in millisatoshi/byte.",
-            "parameters": {
-                "type": "object",
-                "properties": {},
-                "required": [],
-                "additionalProperties": False
-            },
-            "strict": True
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "get_balance",
-            "description": "Returns the balance of a given Bitcoin address.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "address": {
-                        "type": "string",
-                        "description": "The Bitcoin address to check."
-                    }
-                },
-                "required": ["address"],
-                "additionalProperties": False
-            },
-            "strict": True
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "get_utxos",
-            "description": "Returns the UTXOs of a given Bitcoin address.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "address": {
-                        "type": "string",
-                        "description": "The Bitcoin address to fetch UTXOs for."
-                    }
-                },
-                "required": ["address"],
-                "additionalProperties": False
-            },
-            "strict": True
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "send",
-            "description": "Sends satoshis from this canister to a specified address.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "destinationAddress": {
-                        "type": "string",
-                        "description": "The destination Bitcoin address."
-                    },
-                    "amountInSatoshi": {
-                        "type": "number",
-                        "description": "Amount to send in satoshis."
-                    }
-                },
-                "required": ["destinationAddress", "amountInSatoshi"],
-                "additionalProperties": False
-            },
-            "strict": True
-        }
-    }
+
+   
+   
 ]
 
 async def call_icp_endpoint(func_name: str, args: dict):
-    if func_name == "get_current_fee_percentiles":
-        url = f"{BASE_URL}/get-current-fee-percentiles"
-        response = requests.post(url, headers=HEADERS, json={})
-    elif func_name == "get_event_by_id":
+    if func_name == "get_event_by_id":
         event_id = args.get("eventId")
         url = f"{BASE_URL}/events/{event_id}"
         response = requests.get(url, headers=HEADERSUPDATE, json={})
-
     elif func_name == "get_events":
         url = f"{BASE_URL}/events"
         response = requests.get(url, headers=HEADERSUPDATE, json={}, params=args)
@@ -227,19 +150,9 @@ async def call_icp_endpoint(func_name: str, args: dict):
     elif func_name == "create_event":
         url = f"{BASE_URL}/events"
         response = requests.post(url, headers=HEADERSUPDATE, json=args)
-
     elif func_name == "canister_address":
         url = f"{BASE_URL}/canister-address"
         response = requests.get(url, headers=HEADERSUPDATE, json={})
-    elif func_name == "get_balance":
-        url = f"{BASE_URL}/get-balance"
-        response = requests.post(url, headers=HEADERS, json={"address": args["address"]})
-    elif func_name == "get_utxos":
-        url = f"{BASE_URL}/get-utxos"
-        response = requests.post(url, headers=HEADERS, json={"address": args["address"]})
-    elif func_name == "send":
-        url = f"{BASE_URL}/send"
-        response = requests.post(url, headers=HEADERS, json=args)
     else:
         raise ValueError(f"Unsupported function call: {func_name}")
     response.raise_for_status()
@@ -396,47 +309,24 @@ agent.include(chat_proto)
 if __name__ == "__main__":
     agent.run()
 
-
 """
-Queries for /get-balance
-What's the balance of address tb1qexample1234567890?
+🧾 Queries for /get-events
+List all events available.
+Show me the upcoming events.
+Can I get the events list with limit 5?
 
-Can you check how many bitcoins are in tb1qabcde000001234567?
+🧾 Queries for /get-event-by-id
+Get details of event with ID ev12345.
+Show me information for event ev67890.
+Can you fetch the event ev99999 by its ID?
 
-Show me the balance of this Bitcoin wallet: tb1qtestwalletxyz.
+🧾 Queries for /payment
+Generate a payment link for event ev12345.
+I want to pay for event ev67890.
+Show me the payment link for event ev99999.
 
-🧾 Queries for /get-utxos
-What UTXOs are available for address tb1qexampleutxo0001?
-
-List unspent outputs for tb1qunspentoutputs111.
-
-Do I have any unspent transactions for tb1qutxotest9999?
-
-🧾 Queries for /get-current-fee-percentiles
-What are the current Bitcoin fee percentiles?
-
-Show me the latest fee percentile distribution.
-
-How much are the Bitcoin network fees right now?
-
-🧾 Queries for /get-p2pkh-address
-What is my canister's P2PKH address?
-
-Generate a Bitcoin address for me.
-
-Give me a Bitcoin address I can use to receive coins.
-
-🧾 Queries for /send
-Send 10,000 satoshis to tb1qreceiver000111.
-
-Transfer 50000 sats to tb1qsimplewalletabc.
-
-I want to send 120000 satoshis to tb1qdonationaddress001.
-
-🧾 General/Dummy Test
-Run the dummy test endpoint.
-
-Can I see a test response?
-
-Hit the dummy-test route to make sure it works.
+🧾 Queries for /canister-address
+What is the ICP canister address for events?
+Give me the canister address.
+Show me the address of this event management canister.
 """
