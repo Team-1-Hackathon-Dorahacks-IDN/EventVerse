@@ -1,4 +1,3 @@
-Here’s a structured `README.md` for your **Eventverse** project based on your code:
 
 ````markdown
 # Eventverse
