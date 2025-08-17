@@ -1,120 +1,166 @@
-# Azle Hello World
+Here’s a structured `README.md` for your **Eventverse** project based on your code:
 
-- [Installation](#installation)
-- [Deployment](#deployment)
-- [Testing](#testing)
+````markdown
+# Eventverse
 
-Azle helps you to build secure decentralized/replicated servers in TypeScript or JavaScript on [ICP](https://internetcomputer.org/). The current replication factor is [13-40 times](https://dashboard.internetcomputer.org/subnets).
+Eventverse is an AI-powered event management agent built on the Internet Computer (ICP). It leverages **ASI1 AI API** for natural language understanding and **ICP canisters** for managing events. Users can query events, get event details, generate payment links, and interact via both REST API and chat protocols.
 
-## Experimental Mode
+---
 
-This example can only be run in Azle's experimental mode.
+## Features
 
-Azle runs in experimental mode through explicitly enabling a flag in `dfx.json` or certain CLI commands.
+- **Create events** on ICP canisters.
+- **Retrieve events** with optional pagination (`limit` & `offset`).
+- **Get event details** by ID.
+- **Generate payment links** for events.
+- **Retrieve canister address** for the event management system.
+- **AI-powered chat interface** for natural language queries.
+- **REST API endpoint** for chat queries.
 
-This mode is intended for developers who are willing to accept the risk of using an alpha or beta project. Its focus is on quickly enabling new features and functionality without requiring the time and other resources necessary to advance them to the stable mode. The Node.js standard libary, npm ecosystem, and HTTP server functionality are also major areas of focus.
+---
 
-> NOTE: Keep clearly in mind that the experimental mode fundamentally changes the Azle Wasm binary. It is not guaranteed to be secure or stable in API changes or runtime behavior. If you enable the experimental mode, even if you only use APIs from the stable mode, you are accepting a higher risk of bugs, errors, crashes, security exploits, breaking API changes, etc.
+## Requirements
 
-## Installation
+- Python 3.10+
+- `.env` file with the following key:
+  ```text
+  ASI1_API_KEY=your_asi1_api_key_here
+````
 
-> Windows is only supported through a Linux virtual environment of some kind, such as [WSL](https://learn.microsoft.com/en-us/windows/wsl/install)
+* Installed Python packages:
 
-You will need [Node.js](#nodejs) and [dfx](#dfx) to develop ICP applications with Azle:
+  ```bash
+  pip install requests python-dotenv uagents-core uagents
+  ```
 
-### Node.js
+---
 
-It's recommended to use nvm to install the latest LTS version of Node.js:
+## Configuration
 
-```bash
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash
-```
+* **ASI1 API**
 
-Restart your terminal and then run:
+  * API key is loaded from `.env`.
+  * Base URL: `https://api.asi1.ai/v1`.
+* **ICP Canister**
 
-```bash
-nvm install --lts
-```
+  * Canister ID: `w7lou-c7777-77774-qaamq-cai`.
+  * Local testing URL: `http://127.0.0.1:4943`.
 
-Check that the installation went smoothly by looking for clean output from the following command:
+---
 
-```bash
-node --version
-```
+## Available Tools / Functions
 
-### dfx
+1. **create\_event**
 
-Install the dfx command line tools for managing ICP applications:
+   * Create a new event.
+   * Required: `name`, `date`, `location`, `price`.
+   * Optional: `capacity`.
 
-```bash
-DFX_VERSION=0.25.0 sh -ci "$(curl -fsSL https://internetcomputer.org/install.sh)"
-```
+2. **get\_events**
 
-Check that the installation went smoothly by looking for clean output from the following command:
+   * Retrieve a list of events.
+   * Optional: `limit`, `offset`.
+   * Prices are returned in ETH.
 
-```bash
-dfx --version
-```
+3. **get\_event\_by\_id**
 
-## Deployment
+   * Fetch details of a specific event by ID.
 
-To create and deploy a simple sample application called `hello_world`:
+4. **payment**
 
-```bash
-# create a new default project called hello_world
-npx azle new hello_world --http-server --experimental
-cd hello_world
-```
+   * Generate a payment link for an event by ID.
 
-```bash
-# install all npm dependencies including azle
-npm install
-```
+5. **canister\_address**
 
-```bash
-# start up a local ICP replica
-dfx start --clean
-```
+   * Returns the ICP canister address.
 
-In a separate terminal in the `hello_world` directory:
+---
 
-```bash
-# deploy your canister
-dfx deploy
-```
+## Usage
 
-If you would like your canister to autoreload on file changes:
+### REST API
+
+Start the agent:
 
 ```bash
-AZLE_AUTORELOAD=true dfx deploy
+python main.py
 ```
 
-View your frontend in a web browser at `http://[canisterId].raw.localhost:4943`.
+**Endpoint:** `POST /chat`
 
-To obtain your application's [canisterId]:
+**Request Body Example:**
 
-```bash
-dfx canister id backend
+```json
+{
+  "message": "Show me the upcoming events"
+}
 ```
 
-Communicate with your canister using any HTTP client library, for example using `curl`:
+**Response Example:**
 
-```bash
-curl http://[canisterId].raw.localhost:4943/db
-curl -X POST -H "Content-Type: application/json" -d "{ \"hello\": \"world\" }" http://[canisterId].raw.localhost:4943/db/update
+```json
+{
+  "status": "success",
+  "message": "Here are the upcoming events..."
+}
 ```
 
-## Testing
+---
 
-If you would like to run the included test suite:
+### Chat Protocol
 
-```bash
-# start up a local ICP replica
-dfx start --clean
+* Supports `ChatMessage` and `ChatAcknowledgement`.
+* Handles start session messages and normal text messages.
+* AI-powered responses using `ASI1` and ICP tool calls.
+
+---
+
+## Sample Queries
+
+**/get-events**
+
+* List all events available.
+* Show me the upcoming events.
+* Can I get the events list with limit 5?
+
+**/get-event-by-id**
+
+* Get details of event with ID `ev12345`.
+* Show me information for event `ev67890`.
+* Can you fetch the event `ev99999` by its ID?
+
+**/payment**
+
+* Generate a payment link for event `ev12345`.
+* I want to pay for event `ev67890`.
+* Show me the payment link for event `ev99999`.
+
+**/canister-address**
+
+* What is the ICP canister address for events?
+* Give me the canister address.
+* Show me the address of this event management canister.
+
+---
+
+## Contributing
+
+Feel free to open issues or submit pull requests.
+Please make sure to follow PEP8 conventions and test all new tool calls.
+
+---
+
+## License
+
+MIT License
+
 ```
 
-In a separate terminal in the `hello_world` directory:
+---
 
-```bash
-npm test
+If you want, I can also create a **more beginner-friendly README** that includes **diagrams of the architecture**, showing how ASI1, ICP canister, and the agent interact. This is useful if you plan to share the project publicly.  
+
+Do you want me to make that version too?
 ```
+
+![tag:innovationlab](https://img.shields.io/badge/innovationlab-3D8BD3)
