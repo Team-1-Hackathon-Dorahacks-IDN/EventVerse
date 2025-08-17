@@ -4,7 +4,9 @@
 Eventverse is an AI-powered event management agent built on the Internet Computer (ICP). It leverages **ASI1 AI API** for natural language understanding and **ICP canisters** for managing events. Users can query events, get event details, generate payment links, and interact via both REST API and chat protocols.
 
 ---
-
+Agent Details
+Agent Name: EventVerse
+Agent Address: agent1qt548njm954a2ujytafhumc3rjwch03a5r569ck5y8j8w2naa3fej72vn8v
 ## Features
 
 - **Create events** on ICP canisters.

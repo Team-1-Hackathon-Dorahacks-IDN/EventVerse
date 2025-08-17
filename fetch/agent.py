@@ -235,7 +235,7 @@ async def process_query(query: str, ctx: Context) -> str:
         return f"An error occurred while processing your request: {str(e)}"
 
 agent = Agent(
-    name='test-ICP-agent',
+    name='EventVerse',
     port=8001,
     mailbox=True
 )
