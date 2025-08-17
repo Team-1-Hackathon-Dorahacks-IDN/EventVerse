@@ -189,6 +189,7 @@ app.post(
 
 app.get('/payout', async (req: Request, res) => {
   try {
+    console.log("body",req.body)
     const email = req.query.email as string;
     const eventId = req.query.eventId as string;
 

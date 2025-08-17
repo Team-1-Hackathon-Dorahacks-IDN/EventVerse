@@ -100,24 +100,76 @@ export default function EventsPage() {
       setLoading(false);
     }
   }
+  // Mulai edit event
+  function startEdit(event: Event) {
+    setEditingId(event.id);
+    setEditEventData({
+      name: event.name,
+      date: event.date,
+      location: event.location,
+      price: event.price,
+      capacity: event.capacity,
+    });
+  }
+
+  // Batalkan edit
+  function cancelEdit() {
+    setEditingId(null);
+    setEditEventData({
+      name: "",
+      date: "",
+      location: "",
+      price: "",
+      capacity: 0,
+    });
+  }
+
+  // Simpan edit
+  async function saveEdit(id: number) {
+    if (!identity) return alert("Login terlebih dahulu");
+
+    try {
+      const response = await fetch(
+        "http://w7lou-c7777-77774-qaamq-cai.raw.localhost:4943/events",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ id, ...editEventData }), // <-- tambahkan id di sini
+        }
+      );
+
+      if (response.ok) {
+        const updatedEvent = await response.json();
+        setEvents((prev) => prev.map((e) => (e.id === id ? updatedEvent : e)));
+        cancelEdit();
+      } else {
+        throw new Error(`Gagal mengupdate event: ${response.status}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Gagal mengupdate event");
+    }
+  }
 
   async function handleAddEvent() {
     if (!identity) return alert("Login terlebih dahulu");
 
     try {
-      const agent = new HttpAgent({ identity });
-      const actor = createActor("w7lou-c7777-77774-qaamq-cai", { agent });
+      const response = await fetch(
+        "http://w7lou-c7777-77774-qaamq-cai.raw.localhost:4943/events",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(newEvent),
+        }
+      );
 
-      const res = await actor.http_request_update({
-        url: "/events",
-        method: "POST",
-        body: new TextEncoder().encode(JSON.stringify(newEvent)),
-        headers: [],
-      });
-
-      if (res.status_code === 200) {
-        const raw = new TextDecoder().decode(new Uint8Array(res.body));
-        const createdEvent = JSON.parse(raw);
+      if (response.ok) {
+        const createdEvent = await response.json();
         setEvents((prev) => [...prev, createdEvent]);
         setNewEvent({
           name: "",
@@ -127,7 +179,7 @@ export default function EventsPage() {
           capacity: 0,
         });
       } else {
-        throw new Error(`Gagal menambahkan event: ${res.status_code}`);
+        throw new Error(`Gagal menambahkan event: ${response.status}`);
       }
     } catch (err) {
       console.error(err);

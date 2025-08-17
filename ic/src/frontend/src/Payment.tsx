@@ -196,7 +196,7 @@ function Payment() {
       const res = await actor.http_request_update({
         url: `/payout?${queryParams}`,
         method: "GET",
-        body: new Uint8Array([1]),
+        body: new TextEncoder().encode(JSON.stringify({ eventId })),
         headers: [],
       });
 
