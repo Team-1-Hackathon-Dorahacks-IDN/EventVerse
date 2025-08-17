@@ -22,7 +22,7 @@ export function getRouter(): Router {
             req: Request<any, any, any, { limit?: string; offset?: string }>,
             res
         ) => {
-            const limit = Number(req.query.limit ?? -1);
+            const limit = Number(req.query.limit ?? 100); // default 100 jika -1
             const offset = Number(req.query.offset ?? 0);
 
             const events = getEvents(db, limit, offset);
@@ -48,8 +48,14 @@ export function getRouter(): Router {
     // Buat event baru
     router.post(
         '/',
-        (req: Request<any, any, { name: string; date: string; location: string; price: string }>, res) => {
-            const { name, date, location, price } = req.body;
+        (req: Request<
+            any,
+            any,
+            { name: string; date: string; location: string; price: string; capacity: number }
+        >,
+        res
+    ) => {
+            const { name, date, location, price, capacity } = req.body;
 
             // contoh: buat user organizer dummy
             const user = createUser(db, {
@@ -62,7 +68,8 @@ export function getRouter(): Router {
                 name,
                 date,
                 location,
-                price
+                price,
+                capacity
             });
 
             res.json(event);
@@ -79,17 +86,18 @@ export function getRouter(): Router {
                 age: 25 + i
             });
 
-              createEvent(db, {
+            createEvent(db, {
                 user_id: user.id,
                 name: `Event ${v4()}`,
                 date: `2025-08-${String(10 + i).padStart(2, '0')}`,
                 location: `Location ${i}`,
-                price: (0.01 * (i + 1)).toFixed(2)  // "0.01", "0.02", ..., "0.10", "0.11", ...
+                price: (0.01 * (i + 1)).toFixed(2),
+                capacity: 100  // default kapasitas
             });
         }
 
         res.send({
-            Success: `${num} events created`
+            success: `${num} events created`
         });
     });
 
@@ -103,7 +111,7 @@ export function getRouter(): Router {
 
         const deletedId = deleteEvent(db, id);
 
-        res.json(deletedId);
+        res.json({ deletedId });
     });
 
     return router;
@@ -114,18 +122,20 @@ function updateHandler(
     req: Request<
         any,
         any,
-        { id: number; user_id?: number; name?: string; date?: string; location?: string }
+        { id: number; user_id?: number; name?: string; date?: string; location?: string; price?: string; capacity?: number }
     >,
     res: Response
 ): void {
-    const { id, user_id, name, date, location } = req.body;
+    const { id, user_id, name, date, location, price, capacity } = req.body;
 
     const event = updateEvent(db, {
         id,
         user_id,
         name,
         date,
-        location
+        location,
+        price,
+        capacity
     });
 
     res.json(event);

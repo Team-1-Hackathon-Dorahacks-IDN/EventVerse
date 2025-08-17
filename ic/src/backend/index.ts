@@ -9,7 +9,7 @@ import { init } from 'azle/experimental';
 import { getRouter as getRouterPosts } from './entities/posts/router';
 import { getRouter as getRouterUsers } from './entities/users/router';
 import { getRouter as getRouterEvents } from './entities/events/router';
-import { getEvent } from "./entities/events/db";
+import { getEvent, updateEvent } from "./entities/events/db";
 
 // Dummy values instead of real Bitcoin interactions
 const NETWORK: bitcoin_network = { testnet: null };
@@ -216,45 +216,49 @@ app.get('/payout', async (req: Request, res) => {
       return res.status(400).json({ error: "Missing 'eventId' query parameter" });
     }
 
-    // 1. Ambil event dari database
+    // 1. Ambil event
     const event = getEvent(db, Number(eventId));
     if (!event) {
       return res.status(404).json({ error: "Event not found" });
     }
 
-    // Pastikan ada kolom price di event table
+    // 2. Cek kapasitas
+    if (event.booked_count >= event.capacity) {
+      return res.status(400).json({ error: "Event is fully booked" });
+    }
+
+    // 3. Ambil harga
     const valueStr = event.price?.toString();
     if (!valueStr) {
       return res.status(400).json({ error: "Event has no price set" });
     }
 
-    const value = ethers.parseEther(valueStr); // convert ETH string to Wei
+    const value = ethers.parseEther(valueStr);
     const gasLimit = 21_000n;
 
     ic.setOutgoingHttpOptions({ cycles: 200_850_523_200n });
 
     // Wallet pengirim
     const wallet = new ThresholdWallet(
-      {
-        derivationPath: [msgCaller().toUint8Array()],
-      },
+      { derivationPath: [msgCaller().toUint8Array()] },
       ethers.getDefaultProvider('https://sepolia.base.org')
     );
 
-    // Wallet penerima (canister address / organizer)
+    // Wallet penerima
     const walletPayment = new ThresholdWallet(
-      {
-        derivationPath: [canisterSelf().toUint8Array()],
-      },
+      { derivationPath: [canisterSelf().toUint8Array()] },
       ethers.getDefaultProvider('https://sepolia.base.org')
     );
 
     const to = await walletPayment.getAddress();
 
-    // 2. Kirim transaksi sesuai harga event
+    // 4. Kirim transaksi
     const tx = await wallet.sendTransaction({ to, value, gasLimit });
 
-    // 3. Kirim notifikasi jika ada email
+    // 5. Update booked_count
+    updateEvent(db, { id: event.id, booked_count: event.booked_count + 1 });
+
+    // 6. Kirim notifikasi jika ada email
     if (email) {
       setTimer(10, () => {
         sendNotification(to, eventId, tx.hash, email);
@@ -265,8 +269,10 @@ app.get('/payout', async (req: Request, res) => {
       message: "Transaction sent",
       txHash: tx.hash,
       eventId,
-      amount: valueStr
+      amount: valueStr,
+      bookedCount: event.booked_count + 1
     });
+
   } catch (error: any) {
     console.error("Transaction failed:", error);
     res.status(500).json({

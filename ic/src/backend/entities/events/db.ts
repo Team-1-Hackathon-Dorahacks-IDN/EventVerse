@@ -8,17 +8,21 @@ export type Event = {
     date: string;      // format ISO string
     location: string;
     price: string;     // harga sebagai string, misal "0.01"
+    capacity: number;
+    booked_count: number;
     user: User;        // organizer
 };
 
-export type EventCreate = Omit<Event, 'id' | 'user'> & { user_id: number };
-export type EventUpdate = Pick<Event, 'id'> & Partial<EventCreate>;
+export type EventCreate = Omit<Event, 'id' | 'user' | 'booked_count'> & { user_id: number };
+export type EventUpdate = Pick<Event, 'id'> & Partial<EventCreate & { booked_count: number }>;
+
 
 // Ambil semua event
 export function getEvents(db: Database, limit: number, offset: number): Event[] {
     return sqlite<Event>`
         SELECT events.id, events.user_id, events.name, events.date, events.location,
-               users.id, users.username, users.age, events.price
+               users.id, users.username, users.age, events.price,
+               events.capacity, events.booked_count
         FROM events
         JOIN users ON events.user_id = users.id
         ORDER BY events.date ASC
@@ -31,7 +35,8 @@ export function getEvent(db: Database, id: number): Event | null {
     const events =
         sqlite<Event>`
             SELECT events.id, events.user_id, events.name, events.date, events.location,
-                   users.id, users.username, users.age, events.price
+                   users.id, users.username, users.age, events.price,
+                   events.capacity, events.booked_count
             FROM events
             JOIN users ON events.user_id = users.id
             WHERE events.id = ${id}
@@ -53,8 +58,9 @@ export function countEvents(db: Database): number {
 // Tambah event baru
 export function createEvent(db: Database, eventCreate: EventCreate): Event {
     sqlite`
-        INSERT INTO events (user_id, name, date, location, price)
-        VALUES (${eventCreate.user_id}, ${eventCreate.name}, ${eventCreate.date}, ${eventCreate.location}, ${eventCreate.price})
+        INSERT INTO events (user_id, name, date, location, price, capacity)
+        VALUES (${eventCreate.user_id}, ${eventCreate.name}, ${eventCreate.date}, 
+                ${eventCreate.location}, ${eventCreate.price}, ${eventCreate.capacity})
     `(db);
 
     const id = sqlite<number>`SELECT last_insert_rowid()`(
@@ -64,7 +70,7 @@ export function createEvent(db: Database, eventCreate: EventCreate): Event {
 
     const event = getEvent(db, id);
 
-    if (event === null) {
+    if (!event) {
         throw new Error(`createEvent: could not create event with id ${id}`);
     }
 
@@ -79,18 +85,21 @@ export function updateEvent(db: Database, eventUpdate: EventUpdate): Event {
             name = COALESCE(${eventUpdate.name}, name),
             date = COALESCE(${eventUpdate.date}, date),
             location = COALESCE(${eventUpdate.location}, location),
-            price = COALESCE(${eventUpdate.price}, price)
+            price = COALESCE(${eventUpdate.price}, price),
+            capacity = COALESCE(${eventUpdate.capacity}, capacity),
+            booked_count = COALESCE(${eventUpdate.booked_count}, booked_count)
         WHERE id = ${eventUpdate.id}
     `(db);
 
     const event = getEvent(db, eventUpdate.id);
 
-    if (event === null) {
+    if (!event) {
         throw new Error(`updateEvent: could not find event with id ${eventUpdate.id}`);
     }
 
     return event;
 }
+
 
 // Hapus event
 export function deleteEvent(db: Database, id: number): number {
@@ -98,7 +107,7 @@ export function deleteEvent(db: Database, id: number): number {
 
     const event = getEvent(db, id);
 
-    if (event !== null) {
+    if (event) {
         throw new Error(`deleteEvent: could not delete event with id ${id}`);
     }
 
@@ -112,7 +121,9 @@ export function convertEvent(sqlValues: SqlValue[]): Event {
         name: sqlValues[2] as string,
         date: sqlValues[3] as string,
         location: sqlValues[4] as string,
-        price: sqlValues[8] as string, // pastikan index sesuai SELECT
+        price: sqlValues[8] as string,
+        capacity: sqlValues[9] as number,
+        booked_count: sqlValues[10] as number,
         user: {
             id: sqlValues[5] as number,
             username: sqlValues[6] as string,
