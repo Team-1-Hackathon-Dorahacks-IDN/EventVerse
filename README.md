@@ -1,4 +1,5 @@
-# Eventverse
+# Eventverse 
+![tag:innovationlab](https://img.shields.io/badge/innovationlab-3D8BD3)
 
 Eventverse is an AI-powered event management agent built on the Internet Computer (ICP). It leverages **ASI1 AI API** for natural language understanding and **ICP canisters** for managing events. Users can query events, get event details, generate payment links, and interact via both REST API and chat protocols.
 
@@ -138,12 +139,6 @@ python main.py
 * Give me the canister address.
 * Show me the address of this event management canister.
 
----
-
-## Contributing
-
-Feel free to open issues or submit pull requests.
-Please make sure to follow PEP8 conventions and test all new tool calls.
 
 ---
 
@@ -160,4 +155,3 @@ If you want, I can also create a **more beginner-friendly README** that includes
 Do you want me to make that version too?
 ```
 
-![tag:innovationlab](https://img.shields.io/badge/innovationlab-3D8BD3)
