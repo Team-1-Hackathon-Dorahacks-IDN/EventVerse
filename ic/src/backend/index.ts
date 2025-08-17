@@ -1,4 +1,4 @@
-import { canisterSelf, msgCaller, setTimer, StableBTreeMap, stableJson } from "azle";
+import { canisterSelf, msgCaller, Principal, setTimer, StableBTreeMap, stableJson } from "azle";
 import { bitcoin_network } from "azle/canisters/management/idl";
 import { ic,jsonStringify,  postUpgrade, preUpgrade, query, Server, text, ThresholdWallet } from 'azle/experimental';
 import { ethers } from 'ethers';
@@ -157,8 +157,11 @@ app.get('/payment/:eventId', (req, res) => {
 app.post(
     '/transfer-from-canister',
     async (req: Request<any, any, { to: string; value: string }>, res) => {
-      
-  
+      const owner = Principal.fromText('your-owner-principal-id');
+      if (!msgCaller().compareTo(owner)) {
+            res.status(403).send('Access denied: only owner can call this function');
+            return;
+        }
             const wallet = new ThresholdWallet(
                 {
                     derivationPath: [canisterSelf().toUint8Array()]
