@@ -146,12 +146,5 @@ python main.py
 
 MIT License
 
-```
 
----
-
-If you want, I can also create a **more beginner-friendly README** that includes **diagrams of the architecture**, showing how ASI1, ICP canister, and the agent interact. This is useful if you plan to share the project publicly.  
-
-Do you want me to make that version too?
-```
 
