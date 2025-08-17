@@ -196,7 +196,7 @@ function Payment() {
       const res = await actor.http_request_update({
         url: `/payout?${queryParams}`,
         method: "GET",
-        body: [],
+        body: new Uint8Array([1]),
         headers: [],
       });
 
@@ -320,6 +320,9 @@ function Payment() {
               </p>
               <p>
                 <strong>Harga:</strong> {eventDetail.price} ETH
+              </p>
+              <p>
+                <strong>Capacity:</strong> {eventDetail.capacity} People
               </p>
             </div>
           )}
