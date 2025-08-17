@@ -11,13 +11,15 @@ import { getRouter as getRouterUsers } from './entities/users/router';
 import { getRouter as getRouterEvents } from './entities/events/router';
 import { getEvent, updateEvent } from "./entities/events/db";
 
-
+export let owner: Principal;
 let stableDbMap = new StableBTreeMap<'DATABASE', Uint8Array>(0, stableJson, {
     toBytes: (data: Uint8Array): Uint8Array => data,
     fromBytes: (bytes): Uint8Array => bytes
 });
 export let db: Database;
+
 export default Server(()=>{
+  
 const app = express();
 app.use(express.json());
 
@@ -269,6 +271,8 @@ return app.listen();
 },{
      init: init([],async() => {
              db = await initDb();
+              owner = msgCaller(); // Record the installer's principal
+        console.log(`Canister installed by: ${owner?.toText()}`);
         }),
         preUpgrade:preUpgrade(()=>{
           stableDbMap.insert('DATABASE', db.export());
