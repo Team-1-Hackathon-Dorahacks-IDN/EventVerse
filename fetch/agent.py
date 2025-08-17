@@ -48,7 +48,8 @@ tools = [
                 "name": {"type": "string", "description": "Name of the event"},
                 "date": {"type": "string", "description": "Date of the event"},
                 "location": {"type": "string", "description": "Location of the event"},
-                "price": {"type": "string", "description": "Price of the event but dont add any currency"}
+                "price": {"type": "string", "description": "Price of the event but dont add any currency"},
+                "capacity": { "type": "number", "description": "Optional capacity of the event, default value used if omitted" }
             },
             "required": ["name", "date", "location", "price"],
             "additionalProperties": False
