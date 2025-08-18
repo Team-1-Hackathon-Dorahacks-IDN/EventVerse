@@ -197,7 +197,45 @@ async def process_query(query: str, ctx: Context) -> str:
 
             try:
                 result = await call_icp_endpoint(func_name, arguments)
-                content_to_send = json.dumps(result)
+
+                # Customize response formatting based on the tool
+                if func_name == "get_events":
+                    formatted = "\n".join([
+                        f"- {e.get('name')} | Date: {e.get('date')} | Location: {e.get('location')} | Price: {e.get('price')} ETH"
+                        for e in result.get("events", [])
+                    ])
+                    content_to_send = formatted or "No events found."
+
+                elif func_name == "get_event_by_id":
+                    e = result
+                    content_to_send = (
+                        f"Event: {e.get('name')}\n"
+                        f"Date: {e.get('date')}\n"
+                        f"Location: {e.get('location')}\n"
+                        f"Price: {e.get('price')} ETH\n"
+                        f"Capacity: {e.get('capacity', 'N/A')}\n"
+                        f"Description: {e.get('description', 'No description')}"
+                    )
+
+                elif func_name == "create_event":
+                    content_to_send = (
+                        f"✅ Event created successfully!\n"
+                        f"Event ID: {result.get('id')}\n"
+                        f"Name: {result.get('name')}\n"
+                        f"Date: {result.get('date')}\n"
+                        f"Location: {result.get('location')}\n"
+                        f"Price: {result.get('price')}"
+                    )
+
+                elif func_name == "payment":
+                    content_to_send = f"💳 Payment link for event {arguments.get('eventId')}: {result.get('paymentLink')}"
+
+                elif func_name == "canister_address":
+                    content_to_send = f"📦 Canister address: {result.get('address')}"
+
+                else:
+                    content_to_send = json.dumps(result)
+
             except Exception as e:
                 error_content = {
                     "error": f"Tool execution failed: {str(e)}",
@@ -211,6 +249,7 @@ async def process_query(query: str, ctx: Context) -> str:
                 "content": content_to_send
             }
             messages_history.append(tool_result_message)
+
 
         # Step 4: Send results back to ASI1 for final answer
         final_payload = {
