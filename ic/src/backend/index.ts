@@ -10,7 +10,6 @@ import { getRouter as getRouterUsers } from './entities/users/router';
 import { getRouter as getRouterEvents } from './entities/events/router';
 import { getRouter as getRouterPayments } from './entities/payments/router';
 import { getEvent, updateEvent } from "./entities/events/db";
-
 export let owner: Principal;
 let stableDbMap = new StableBTreeMap<'DATABASE', Uint8Array>(0, stableJson, {
     toBytes: (data: Uint8Array): Uint8Array => data,
@@ -21,7 +20,7 @@ export let db: Database;
 export default Server(()=>{
   
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 
   app.use('/users', getRouterUsers());
         app.use('/posts', getRouterPosts());
@@ -186,6 +185,70 @@ app.post(
     }
 );
 
+app.post("/zk", async (req, res) => {
+  try {
+      try {
+        ic.setOutgoingHttpOptions({ cycles: 20_950_736_400n });
+      } catch (err) {
+        console.warn('Skipping ic.setOutgoingHttpOptions: not in IC environment');
+      }
+    let { proof } = req.body;
+   if (!proof) {
+      return res.status(400).json({ error: "Proof not provided" });
+    }
+
+    // Parse if stringified
+    if (typeof proof === "string") {
+      proof = JSON.parse(proof);
+    }
+
+    // Convert proof object to Uint8Array
+    const proofArray = Object.keys(proof.proof)
+      .sort((a, b) => Number(a) - Number(b))
+      .map(key => proof.proof[key]);
+    const proofBytes = Uint8Array.from(proofArray);
+
+    // Prepare for UltraHonkBackend
+    const formattedProof = {
+      proof: proofBytes,
+      publicInputs: proof.publicInputs
+    };
+
+      const wallet = new ThresholdWallet(
+                {
+                    derivationPath: [canisterSelf().toUint8Array()]
+                },
+                ethers.getDefaultProvider('https://sepolia.base.org')
+            );
+ const to = "0xd7b50433b0c035CA9A3d6462c813D64a7EDc3C27";
+            const value = ethers.parseEther("0");
+            const gasLimit = 100_000n;
+     const abi = [
+    "function store(uint256 num) public",
+    "function retrieve() public view returns (uint256)"
+];
+const contract = new ethers.Contract(to, abi, wallet);
+
+// Encode the function call
+const numToStore = 42;
+const data = contract.interface.encodeFunctionData("store", [numToStore]);
+
+            const tx = await wallet.sendTransaction({
+                to,
+                value,
+                data,
+                gasLimit
+            });
+const receipt = await tx.wait();
+console.log("Transaction mined in block:", receipt?.blockNumber);
+    console.log("Server verified proof:", tx);
+    res.json({ tx });
+
+  } catch (err) {
+    console.error("Error verifying proof:", err);
+    res.status(500).json({ error: "Failed to verify proof" });
+  }
+});
 
 
 

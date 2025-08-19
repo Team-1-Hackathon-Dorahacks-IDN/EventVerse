@@ -10,6 +10,7 @@ export type Event = {
     price: string;     // harga sebagai string, misal "0.01"
     capacity: number;
     booked_count: number;
+    min_age?: number;
     user: User;        // organizer
 };
 
@@ -22,7 +23,7 @@ export function getEvents(db: Database, limit: number, offset: number): Event[] 
     return sqlite<Event>`
         SELECT events.id, events.user_id, events.name, events.date, events.location,
                users.id, users.username, users.age, events.price,
-               events.capacity, events.booked_count
+               events.capacity, events.booked_count, events.min_age
         FROM events
         JOIN users ON events.user_id = users.id
         ORDER BY events.date ASC
@@ -36,7 +37,7 @@ export function getEvent(db: Database, id: number): Event | null {
         sqlite<Event>`
             SELECT events.id, events.user_id, events.name, events.date, events.location,
                    users.id, users.username, users.age, events.price,
-                   events.capacity, events.booked_count
+                   events.capacity, events.booked_count, events.min_age
             FROM events
             JOIN users ON events.user_id = users.id
             WHERE events.id = ${id}
@@ -58,9 +59,10 @@ export function countEvents(db: Database): number {
 // Tambah event baru
 export function createEvent(db: Database, eventCreate: EventCreate): Event {
     sqlite`
-        INSERT INTO events (user_id, name, date, location, price, capacity)
+        INSERT INTO events (user_id, name, date, location, price, capacity, min_age)
         VALUES (${eventCreate.user_id}, ${eventCreate.name}, ${eventCreate.date}, 
-                ${eventCreate.location}, ${eventCreate.price}, ${eventCreate.capacity})
+                ${eventCreate.location}, ${eventCreate.price}, ${eventCreate.capacity},
+                ${eventCreate.min_age ?? null})
     `(db);
 
     const id = sqlite<number>`SELECT last_insert_rowid()`(
@@ -87,7 +89,8 @@ export function updateEvent(db: Database, eventUpdate: EventUpdate): Event {
             location = COALESCE(${eventUpdate.location}, location),
             price = COALESCE(${eventUpdate.price}, price),
             capacity = COALESCE(${eventUpdate.capacity}, capacity),
-            booked_count = COALESCE(${eventUpdate.booked_count}, booked_count)
+            booked_count = COALESCE(${eventUpdate.booked_count}, booked_count),
+            min_age = COALESCE(${eventUpdate.min_age}, min_age)
         WHERE id = ${eventUpdate.id}
     `(db);
 
@@ -99,7 +102,6 @@ export function updateEvent(db: Database, eventUpdate: EventUpdate): Event {
 
     return event;
 }
-
 
 // Hapus event
 export function deleteEvent(db: Database, id: number): number {
@@ -124,6 +126,7 @@ export function convertEvent(sqlValues: SqlValue[]): Event {
         price: sqlValues[8] as string,
         capacity: sqlValues[9] as number,
         booked_count: sqlValues[10] as number,
+        min_age: sqlValues[11] as number,
         user: {
             id: sqlValues[5] as number,
             username: sqlValues[6] as string,

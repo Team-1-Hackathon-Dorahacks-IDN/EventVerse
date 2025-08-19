@@ -8,6 +8,7 @@ export const migration1 = `
         price TEXT NOT NULL,
         capacity INTEGER NOT NULL DEFAULT 0,
         booked_count INTEGER NOT NULL DEFAULT 0,
+        min_age INTEGER,
         FOREIGN KEY (user_id) REFERENCES users(id)
     );
 `;

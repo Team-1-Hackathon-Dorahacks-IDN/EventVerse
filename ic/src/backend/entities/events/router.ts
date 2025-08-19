@@ -22,7 +22,7 @@ export function getRouter(): Router {
             req: Request<any, any, any, { limit?: string; offset?: string }>,
             res
         ) => {
-            const limit = Number(req.query.limit ?? 100); // default 100 jika -1
+            const limit = Number(req.query.limit ?? 100);
             const offset = Number(req.query.offset ?? 0);
 
             const events = getEvents(db, limit, offset);
@@ -51,11 +51,18 @@ export function getRouter(): Router {
         (req: Request<
             any,
             any,
-            { name: string; date: string; location: string; price: string; capacity: number }
+            {
+                name: string;
+                date: string;
+                location: string;
+                price: string;
+                capacity: number;
+                min_age?: number;
+            }
         >,
         res
     ) => {
-            const { name, date, location, price, capacity } = req.body;
+            const { name, date, location, price, capacity, min_age } = req.body;
 
             // contoh: buat user organizer dummy
             const user = createUser(db, {
@@ -69,7 +76,8 @@ export function getRouter(): Router {
                 date,
                 location,
                 price,
-                capacity
+                capacity,
+                min_age
             });
 
             res.json(event);
@@ -92,7 +100,8 @@ export function getRouter(): Router {
                 date: `2025-08-${String(10 + i).padStart(2, '0')}`,
                 location: `Location ${i}`,
                 price: (0.01 * (i + 1)).toFixed(2),
-                capacity: 100  // default kapasitas
+                capacity: 100,
+                min_age: 18 + i // contoh min_age per event
             });
         }
 
@@ -122,11 +131,20 @@ function updateHandler(
     req: Request<
         any,
         any,
-        { id: number; user_id?: number; name?: string; date?: string; location?: string; price?: string; capacity?: number }
+        {
+            id: number;
+            user_id?: number;
+            name?: string;
+            date?: string;
+            location?: string;
+            price?: string;
+            capacity?: number;
+            min_age?: number;
+        }
     >,
     res: Response
 ): void {
-    const { id, user_id, name, date, location, price, capacity } = req.body;
+    const { id, user_id, name, date, location, price, capacity, min_age } = req.body;
 
     const event = updateEvent(db, {
         id,
@@ -135,7 +153,8 @@ function updateHandler(
         date,
         location,
         price,
-        capacity
+        capacity,
+        min_age
     });
 
     res.json(event);

@@ -5,8 +5,10 @@
     "test": "NODE_OPTIONS=--experimental-vm-modules AZLE_EXPERIMENTAL=true jest"
   },
   "dependencies": {
+    "@aztec/bb.js": "^0.87.0",
     "@dfinity/agent": "^3.2.0",
     "@dfinity/auth-client": "^3.2.0",
+    "@noir-lang/noir_js": "^1.0.0-beta.9",
     "azle": "0.32.0",
     "azle-experimental-deps": "github:demergent-labs/azle-experimental-deps#d804c0838c50aa4221e50d8d522c86163ea68cdd",
     "cors": "^2.8.5",
