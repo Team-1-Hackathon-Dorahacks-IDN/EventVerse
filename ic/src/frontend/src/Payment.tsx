@@ -4,9 +4,15 @@ import { Identity, HttpAgent } from "@dfinity/agent";
 import { AuthClient } from "@dfinity/auth-client";
 import { createActor } from "../../declarations/backend";
 import { useParams } from "react-router-dom";
+import KtpOcr from "./ocr";
+import { UltraHonkBackend } from "@aztec/bb.js";
+import { CompiledCircuit, Noir } from "@noir-lang/noir_js";
+import zk from "./assets/zk.json"; // path to your zk.json
 
 function Payment() {
   const { eventId } = useParams();
+  const [isProofValid, setIsProofValid] = useState(false);
+  const [proofBlobUrl, setProofBlobUrl] = useState<string | null>(null);
   const [identity, setIdentity] = useState<Identity | null>(null);
   const [callerAddress, setCallerAddress] = useState("");
   const [callerBalance, setCallerBalance] = useState("");
@@ -334,6 +340,49 @@ function Payment() {
             }`}
           >
             <h2 className="text-xl font-semibold mb-2">Form Pembayaran</h2>
+            <KtpOcr
+              onExtractBirthdate={async (dob) => {
+                const year = dob?.split("-").find((part) => part.length === 4);
+
+                if (!year) {
+                  console.error("Year not found in date of birth.");
+                  setIsProofValid(false);
+                  return;
+                }
+
+                try {
+                  const noir = new Noir(zk as CompiledCircuit);
+                  const backend = new UltraHonkBackend(zk.bytecode);
+
+                  const input = {
+                    birth_year: year,
+                    current_year: new Date().getFullYear().toString(),
+                  };
+
+                  const { witness } = await noir.execute(input);
+                  const proof = await backend.generateProof(witness);
+                  const isValid = await backend.verifyProof(proof);
+
+                  setIsProofValid(isValid);
+
+                  if (isValid) {
+                    const blob = new Blob([JSON.stringify(proof)], {
+                      type: "application/json",
+                    });
+                    const url = URL.createObjectURL(blob);
+                    setProofBlobUrl(url);
+                  }
+
+                  setIsProofValid(isValid); // ✅ Update proof status
+                  console.log(
+                    `Proof is ${isValid ? "valid" : "invalid"}... ✅`
+                  );
+                } catch (e) {
+                  console.log("error", e);
+                  setIsProofValid(false);
+                }
+              }}
+            />
             <label className="block mb-2">Email untuk notifikasi:</label>
             <input
               type="email"
