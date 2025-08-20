@@ -215,7 +215,7 @@ async def process_query(query: str, ctx: Context) -> str:
                         f"Location: {e.get('location')}\n"
                         f"Price: {e.get('price')} ETH\n"
                         f"Capacity: {e.get('capacity', 'N/A')}\n"
-                        f"Description: {e.get('description', 'No description')}"
+                        f"Min Age: {e.get('min_age', 'N/A')}"
                     )
 
                 elif func_name == "create_event":
