@@ -49,7 +49,8 @@ tools = [
                 "date": {"type": "string", "description": "Date of the event"},
                 "location": {"type": "string", "description": "Location of the event"},
                 "price": {"type": "string", "description": "Price of the event but dont add any currency"},
-                "capacity": { "type": "number", "description": "Optional capacity of the event, default value used if omitted" }
+                "capacity": { "type": "number", "description": "Optional capacity of the event, default value used if omitted" },
+                   "min_age": { "type": "number", "description": "Optional minimum age for the event" }
             },
             "required": ["name", "date", "location", "price"],
             "additionalProperties": False

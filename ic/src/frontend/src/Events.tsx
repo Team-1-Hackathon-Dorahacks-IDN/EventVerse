@@ -14,6 +14,7 @@ interface Event {
   price: string;
   capacity: number;
   booked_count: number;
+  min_age?: number;
 }
 
 export default function EventsPage() {
@@ -27,6 +28,7 @@ export default function EventsPage() {
     location: "",
     price: "",
     capacity: 0,
+    min_age: 0,
   });
 
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -36,6 +38,7 @@ export default function EventsPage() {
     location: "",
     price: "",
     capacity: 0,
+    min_age: 0,
   });
 
   const [isLightMode, setIsLightMode] = useState(true);
@@ -91,16 +94,16 @@ export default function EventsPage() {
         const data = JSON.parse(raw);
         setEvents(data);
       } else {
-        throw new Error(`Gagal fetch events: ${res.status_code}`);
+        throw new Error(`Failed to fetch events: ${res.status_code}`);
       }
     } catch (err) {
       console.error(err);
-      alert("Gagal fetch events");
+      alert("Failed to fetch events");
     } finally {
       setLoading(false);
     }
   }
-  // Mulai edit event
+
   function startEdit(event: Event) {
     setEditingId(event.id);
     setEditEventData({
@@ -109,10 +112,10 @@ export default function EventsPage() {
       location: event.location,
       price: event.price,
       capacity: event.capacity,
+      min_age: event.min_age || 0,
     });
   }
 
-  // Batalkan edit
   function cancelEdit() {
     setEditingId(null);
     setEditEventData({
@@ -121,22 +124,20 @@ export default function EventsPage() {
       location: "",
       price: "",
       capacity: 0,
+      min_age: 0,
     });
   }
 
-  // Simpan edit
   async function saveEdit(id: number) {
-    if (!identity) return alert("Login terlebih dahulu");
+    if (!identity) return alert("Please login first");
 
     try {
       const response = await fetch(
         "http://w7lou-c7777-77774-qaamq-cai.raw.localhost:4943/events",
         {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ id, ...editEventData }), // <-- tambahkan id di sini
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id, ...editEventData }),
         }
       );
 
@@ -145,25 +146,23 @@ export default function EventsPage() {
         setEvents((prev) => prev.map((e) => (e.id === id ? updatedEvent : e)));
         cancelEdit();
       } else {
-        throw new Error(`Gagal mengupdate event: ${response.status}`);
+        throw new Error(`Failed to update event: ${response.status}`);
       }
     } catch (err) {
       console.error(err);
-      alert("Gagal mengupdate event");
+      alert("Failed to update event");
     }
   }
 
   async function handleAddEvent() {
-    if (!identity) return alert("Login terlebih dahulu");
+    if (!identity) return alert("Please login first");
 
     try {
       const response = await fetch(
         "http://w7lou-c7777-77774-qaamq-cai.raw.localhost:4943/events",
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(newEvent),
         }
       );
@@ -177,18 +176,19 @@ export default function EventsPage() {
           location: "",
           price: "",
           capacity: 0,
+          min_age: 0,
         });
       } else {
-        throw new Error(`Gagal menambahkan event: ${response.status}`);
+        throw new Error(`Failed to add event: ${response.status}`);
       }
     } catch (err) {
       console.error(err);
-      alert("Gagal menambahkan event");
+      alert("Failed to add event");
     }
   }
 
   async function handleDelete(id: number) {
-    if (!identity) return alert("Login terlebih dahulu");
+    if (!identity) return alert("Please login first");
 
     try {
       const agent = new HttpAgent({ identity });
@@ -204,11 +204,11 @@ export default function EventsPage() {
       if (res.status_code === 200) {
         setEvents((prev) => prev.filter((e) => e.id !== id));
       } else {
-        throw new Error(`Gagal hapus event: ${res.status_code}`);
+        throw new Error(`Failed to delete event: ${res.status_code}`);
       }
     } catch (err) {
       console.error(err);
-      alert("Gagal menghapus event");
+      alert("Failed to delete event");
     }
   }
 
@@ -226,9 +226,10 @@ export default function EventsPage() {
   if (!identity)
     return (
       <div className="text-center mt-20">
-        🔑 Silakan login menggunakan Internet Identity...
+        🔑 Please login using Internet Identity...
       </div>
     );
+
   return (
     <div
       className={`min-h-screen p-6 ${
@@ -275,36 +276,35 @@ export default function EventsPage() {
           Add New Event
         </h2>
         <div className="flex flex-wrap gap-4 mb-4">
-          {["name", "date", "location", "price", "capacity"].map((key) => (
-            <input
-              key={key}
-              type={
-                key === "date" ? "date" : key === "capacity" ? "number" : "text"
-              }
-              placeholder={
-                key === "price"
-                  ? "Price (ETH)"
-                  : key === "capacity"
-                  ? "Capacity"
-                  : key.charAt(0).toUpperCase() + key.slice(1)
-              }
-              className={`flex-1 p-2 rounded-md border focus:outline-none focus:ring-2 ${
-                isLightMode
-                  ? "bg-gray-100 border-gray-300 text-gray-900 focus:ring-indigo-500"
-                  : "bg-gray-700 border-gray-600 text-gray-100 focus:ring-indigo-400"
-              }`}
-              value={newEvent[key as keyof typeof newEvent]}
-              onChange={(e) =>
-                setNewEvent({
-                  ...newEvent,
-                  [key]:
-                    key === "capacity"
-                      ? Number(e.target.value)
-                      : e.target.value,
-                })
-              }
-            />
-          ))}
+          {["name", "date", "location", "price", "capacity", "min_age"].map(
+            (key) => (
+              <input
+                key={key}
+                type={key === "date" ? "date" : "number"}
+                placeholder={
+                  key === "price"
+                    ? "Price (ETH)"
+                    : key === "capacity"
+                    ? "Capacity"
+                    : key === "min_age"
+                    ? "Minimum Age"
+                    : key.charAt(0).toUpperCase() + key.slice(1)
+                }
+                className={`flex-1 p-2 rounded-md border focus:outline-none focus:ring-2 ${
+                  isLightMode
+                    ? "bg-gray-100 border-gray-300 text-gray-900 focus:ring-indigo-500"
+                    : "bg-gray-700 border-gray-600 text-gray-100 focus:ring-indigo-400"
+                }`}
+                value={newEvent[key as keyof typeof newEvent]}
+                onChange={(e) =>
+                  setNewEvent({
+                    ...newEvent,
+                    [key]: Number(e.target.value) || e.target.value,
+                  })
+                }
+              />
+            )
+          )}
         </div>
         <button
           className={`font-semibold py-2 px-4 rounded-md transition ${
@@ -329,35 +329,31 @@ export default function EventsPage() {
           >
             {editingId === event.id ? (
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full">
-                {["name", "date", "location", "price", "capacity"].map(
-                  (key) => (
-                    <input
-                      key={key}
-                      type={
-                        key === "date"
-                          ? "date"
-                          : key === "capacity"
-                          ? "number"
-                          : "text"
-                      }
-                      value={editEventData[key as keyof typeof editEventData]}
-                      className={`p-2 rounded-md border flex-1 ${
-                        isLightMode
-                          ? "bg-gray-100 border-gray-300 text-gray-900"
-                          : "bg-gray-700 border-gray-600 text-gray-100"
-                      }`}
-                      onChange={(e) =>
-                        setEditEventData({
-                          ...editEventData,
-                          [key]:
-                            key === "capacity"
-                              ? Number(e.target.value)
-                              : e.target.value,
-                        })
-                      }
-                    />
-                  )
-                )}
+                {[
+                  "name",
+                  "date",
+                  "location",
+                  "price",
+                  "capacity",
+                  "min_age",
+                ].map((key) => (
+                  <input
+                    key={key}
+                    type={key === "date" ? "date" : "number"}
+                    value={editEventData[key as keyof typeof editEventData]}
+                    className={`p-2 rounded-md border flex-1 ${
+                      isLightMode
+                        ? "bg-gray-100 border-gray-300 text-gray-900"
+                        : "bg-gray-700 border-gray-600 text-gray-100"
+                    }`}
+                    onChange={(e) =>
+                      setEditEventData({
+                        ...editEventData,
+                        [key]: Number(e.target.value) || e.target.value,
+                      })
+                    }
+                  />
+                ))}
                 <div className="flex gap-2 mt-2 sm:mt-0">
                   <button
                     className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md transition"
@@ -378,7 +374,8 @@ export default function EventsPage() {
                 <div className="mb-2 sm:mb-0">
                   <strong>{event.name}</strong> <br />
                   {event.date} — {event.location} — {event.price} ETH <br />
-                  Capacity: {event.booked_count}/{event.capacity}
+                  Capacity: {event.booked_count}/{event.capacity} — Min Age:{" "}
+                  {event.min_age || 0}
                 </div>
                 <div className="flex gap-2">
                   <button

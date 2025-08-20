@@ -25,6 +25,7 @@ function Payment() {
   const [eventDetail, setEventDetail] = useState(null);
   const [isLightMode, setIsLightMode] = useState(true);
   const toggleTheme = () => setIsLightMode((prev) => !prev);
+
   useEffect(() => {
     authenticateAndFetch();
   }, []);
@@ -80,7 +81,7 @@ function Payment() {
         setAmount(parsed.price);
       }
     } catch (err) {
-      console.error("Gagal fetch event:", err);
+      console.error("Failed to fetch event:", err);
     }
   }
 
@@ -101,13 +102,13 @@ function Payment() {
         await fetchCallerBalance(actor, address);
       }
     } catch (err) {
-      console.error("Gagal ambil caller address:", err);
+      console.error("Failed to fetch caller address:", err);
     }
   }
 
   async function fetchCallerBalance(actor, address: string) {
     try {
-      setCallerBalance("🔄 Mengambil saldo...");
+      setCallerBalance("🔄 Fetching balance...");
       const res = await actor.http_request_update({
         url: `/address-balance?address=${address}`,
         method: "GET",
@@ -119,13 +120,13 @@ function Payment() {
         const raw = new TextDecoder().decode(new Uint8Array(res.body));
         const parsed = JSON.parse(raw);
         const eth = Number(parsed.balance) / 1e18;
-        setCallerBalance(`💰 Saldo: ${eth} ETH`);
+        setCallerBalance(`💰 Balance: ${eth} ETH`);
       } else {
-        throw new Error(`Gagal fetch saldo: ${res.status_code}`);
+        throw new Error(`Failed to fetch balance: ${res.status_code}`);
       }
     } catch (err) {
       console.error(err);
-      setCallerBalance("❌ Gagal mengambil saldo");
+      setCallerBalance("❌ Failed to fetch balance");
     }
   }
 
@@ -146,13 +147,13 @@ function Payment() {
         await fetchCanisterBalance(actor, address);
       }
     } catch (err) {
-      console.error("Gagal ambil canister address:", err);
+      console.error("Failed to fetch canister address:", err);
     }
   }
 
   async function fetchCanisterBalance(actor, address: string) {
     try {
-      setCanisterBalance("🔄 Mengambil saldo...");
+      setCanisterBalance("🔄 Fetching balance...");
       const res = await actor.http_request_update({
         url: `/address-balance?address=${address}`,
         method: "GET",
@@ -164,13 +165,13 @@ function Payment() {
         const raw = new TextDecoder().decode(new Uint8Array(res.body));
         const parsed = JSON.parse(raw);
         const eth = Number(parsed.balance) / 1e18;
-        setCanisterBalance(`💰 Saldo: ${eth} ETH`);
+        setCanisterBalance(`💰 Balance: ${eth} ETH`);
       } else {
-        throw new Error(`Gagal fetch saldo: ${res.status_code}`);
+        throw new Error(`Failed to fetch balance: ${res.status_code}`);
       }
     } catch (err) {
       console.error(err);
-      setCanisterBalance("❌ Gagal mengambil saldo");
+      setCanisterBalance("❌ Failed to fetch balance");
     }
   }
 
@@ -184,14 +185,13 @@ function Payment() {
 
   async function handlePayment(email: string) {
     if (!identity) {
-      alert("Login terlebih dahulu sebelum melakukan pembayaran");
+      alert("Please login before making a payment.");
       return;
     }
 
     try {
-      setPaymentStatus("Memproses pembayaran...");
+      setPaymentStatus("Processing payment...");
       const agent = new HttpAgent({ identity });
-
       const actor = createActor("w7lou-c7777-77774-qaamq-cai", { agent });
 
       const queryParams = new URLSearchParams({
@@ -210,27 +210,27 @@ function Payment() {
         const raw = new TextDecoder().decode(new Uint8Array(res.body));
         const parsed = JSON.parse(raw);
         const txHash = parsed.txHash;
-        setPaymentStatus(`✅ Pembayaran sukses: ${txHash}`);
+        setPaymentStatus(`✅ Payment successful: ${txHash}`);
 
         await fetchCallerBalance(actor, callerAddress);
         await fetchCanisterBalance(actor, canisterAddress);
       } else {
-        throw new Error(`Gagal transfer: ${res.status_code}`);
+        throw new Error(`Failed to transfer: ${res.status_code}`);
       }
     } catch (err) {
       console.error(err);
-      setPaymentStatus("❌ Gagal memproses pembayaran");
+      setPaymentStatus("❌ Payment failed");
     }
   }
 
   async function handleAirdrop() {
     if (!callerAddress) {
-      alert("Alamat belum tersedia. Login dulu.");
+      alert("Address not available. Please login first.");
       return;
     }
 
     try {
-      setAirdropStatus("🚀 Mengirim airdrop ETH...");
+      setAirdropStatus("🚀 Sending ETH airdrop...");
 
       const res = await fetch(
         `${
@@ -244,15 +244,15 @@ function Payment() {
       );
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Airdrop gagal");
+      if (!res.ok) throw new Error(data.error || "Airdrop failed");
 
-      setAirdropStatus(`✅ Airdrop sukses! Tx Hash: ${data.txHash}`);
+      setAirdropStatus(`✅ Airdrop successful! Tx Hash: ${data.txHash}`);
       const agent = new HttpAgent({ identity });
       const actor = createActor("w7lou-c7777-77774-qaamq-cai", { agent });
       await fetchCallerBalance(actor, callerAddress);
     } catch (err) {
       console.error(err);
-      setAirdropStatus("❌ Gagal airdrop ETH");
+      setAirdropStatus("❌ Airdrop failed");
     }
   }
 
@@ -263,7 +263,7 @@ function Payment() {
       } min-h-screen p-6 transition-colors duration-300`}
     >
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">💳 Halaman Pembayaran</h1>
+        <h1 className="text-2xl font-bold">💳 Payment Page</h1>
         <button
           onClick={toggleTheme}
           className={`px-4 py-2 rounded-lg transition-colors duration-300 ${
@@ -278,7 +278,7 @@ function Payment() {
 
       {identity ? (
         <>
-          {/* Info Principal & Saldo */}
+          {/* Principal & Balance Info */}
           <div
             className={`p-6 rounded-xl shadow mb-6 transition-colors duration-300 ${
               isLightMode ? "bg-white shadow-md" : "bg-gray-800 shadow-lg"
@@ -288,16 +288,16 @@ function Payment() {
               <strong>Principal:</strong> {identity.getPrincipal().toString()}
             </p>
             <p>
-              <strong>Alamat Caller:</strong> {callerAddress || "-"}
+              <strong>Caller Address:</strong> {callerAddress || "-"}
             </p>
             <p>
-              <strong>Saldo:</strong> {callerBalance || "-"}
+              <strong>Balance:</strong> {callerBalance || "-"}
             </p>
             <p>
-              <strong>Alamat Pembayaran:</strong> {canisterAddress || "-"}
+              <strong>Payment Address:</strong> {canisterAddress || "-"}
             </p>
             <p>
-              <strong>Saldo Pembayaran:</strong> {canisterBalance || "-"}
+              <strong>Payment Balance:</strong> {canisterBalance || "-"}
             </p>
             <button
               onClick={logout}
@@ -307,25 +307,25 @@ function Payment() {
             </button>
           </div>
 
-          {/* Detail Event */}
+          {/* Event Details */}
           {eventDetail && (
             <div
               className={`p-6 rounded-xl shadow mb-6 transition-colors duration-300 ${
                 isLightMode ? "bg-white shadow-md" : "bg-gray-800 shadow-lg"
               }`}
             >
-              <h2 className="text-xl font-semibold mb-2">Detail Event</h2>
+              <h2 className="text-xl font-semibold mb-2">Event Details</h2>
               <p>
-                <strong>Nama Event:</strong> {eventDetail.name}
+                <strong>Event Name:</strong> {eventDetail.name}
               </p>
               <p>
-                <strong>Tanggal:</strong> {eventDetail.date}
+                <strong>Date:</strong> {eventDetail.date}
               </p>
               <p>
-                <strong>Lokasi:</strong> {eventDetail.location}
+                <strong>Location:</strong> {eventDetail.location}
               </p>
               <p>
-                <strong>Harga:</strong> {eventDetail.price} ETH
+                <strong>Price:</strong> {eventDetail.price} ETH
               </p>
               <p>
                 <strong>Capacity:</strong> {eventDetail.capacity} People
@@ -333,57 +333,62 @@ function Payment() {
             </div>
           )}
 
-          {/* Form Pembayaran */}
+          {/* Payment Form */}
           <div
             className={`p-6 rounded-xl shadow mb-6 transition-colors duration-300 ${
               isLightMode ? "bg-white shadow-md" : "bg-gray-800 shadow-lg"
             }`}
           >
-            <h2 className="text-xl font-semibold mb-2">Form Pembayaran</h2>
-            <KtpOcr
-              onExtractBirthdate={async (dob) => {
-                const year = dob?.split("-").find((part) => part.length === 4);
+            <h2 className="text-xl font-semibold mb-2">Payment Form</h2>
 
-                if (!year) {
-                  console.error("Year not found in date of birth.");
-                  setIsProofValid(false);
-                  return;
-                }
-
-                try {
-                  const noir = new Noir(zk as CompiledCircuit);
-                  const backend = new UltraHonkBackend(zk.bytecode);
-
-                  const input = {
-                    birth_year: year,
-                    current_year: new Date().getFullYear().toString(),
-                  };
-
-                  const { witness } = await noir.execute(input);
-                  const proof = await backend.generateProof(witness);
-                  const isValid = await backend.verifyProof(proof);
-
-                  setIsProofValid(isValid);
-
-                  if (isValid) {
-                    const blob = new Blob([JSON.stringify(proof)], {
-                      type: "application/json",
-                    });
-                    const url = URL.createObjectURL(blob);
-                    setProofBlobUrl(url);
+            {/* Show KtpOcr only if min_age >= 18 */}
+            {eventDetail?.min_age >= 18 && (
+              <KtpOcr
+                onExtractBirthdate={async (dob) => {
+                  const year = dob
+                    ?.split("-")
+                    .find((part) => part.length === 4);
+                  if (!year) {
+                    console.error("Year not found in date of birth.");
+                    setIsProofValid(false);
+                    return;
                   }
 
-                  setIsProofValid(isValid); // ✅ Update proof status
-                  console.log(
-                    `Proof is ${isValid ? "valid" : "invalid"}... ✅`
-                  );
-                } catch (e) {
-                  console.log("error", e);
-                  setIsProofValid(false);
-                }
-              }}
-            />
-            <label className="block mb-2">Email untuk notifikasi:</label>
+                  try {
+                    const noir = new Noir(zk as CompiledCircuit);
+                    const backend = new UltraHonkBackend(zk.bytecode);
+
+                    const input = {
+                      birth_year: year,
+                      current_year: new Date().getFullYear().toString(),
+                    };
+
+                    const { witness } = await noir.execute(input);
+                    const proof = await backend.generateProof(witness);
+                    const isValid = await backend.verifyProof(proof);
+
+                    setIsProofValid(isValid);
+
+                    if (isValid) {
+                      const blob = new Blob([JSON.stringify(proof)], {
+                        type: "application/json",
+                      });
+                      const url = URL.createObjectURL(blob);
+                      setProofBlobUrl(url);
+                    }
+
+                    console.log(
+                      `Proof is ${isValid ? "valid" : "invalid"}... ✅`
+                    );
+                  } catch (e) {
+                    console.log("error", e);
+                    setIsProofValid(false);
+                  }
+                }}
+              />
+            )}
+
+            <label className="block mb-2">Email for notifications:</label>
             <input
               type="email"
               value={email}
@@ -395,19 +400,30 @@ function Payment() {
                   : "bg-gray-700 border-gray-600 text-gray-100 focus:ring-2 focus:ring-indigo-400"
               }`}
             />
-            <p className="mb-2">Jumlah: {amount} ETH</p>
+            <p className="mb-2">Amount: {amount} ETH</p>
+
             <button
               onClick={() => handlePayment(email)}
-              className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition"
+              disabled={eventDetail?.min_age >= 18 && !isProofValid}
+              className={`px-4 py-2 rounded-lg text-white transition ${
+                eventDetail?.min_age >= 18 && !isProofValid
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-indigo-600 hover:bg-indigo-700"
+              }`}
             >
-              Bayar Sekarang
+              Pay Now
             </button>
+            {eventDetail?.min_age >= 18 && !isProofValid && (
+              <p className="text-red-500 mt-2">
+                🔒 Please verify your ID first
+              </p>
+            )}
             {paymentStatus && <p className="mt-2">{paymentStatus}</p>}
           </div>
 
           {/* Airdrop */}
           <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-2">Airdrop ETH</h2>
+            <h2 className="text-xl font-semibold mb-2">ETH Airdrop</h2>
             <button
               onClick={handleAirdrop}
               className={`px-4 py-2 rounded-lg transition ${
@@ -422,7 +438,7 @@ function Payment() {
           </div>
         </>
       ) : (
-        <p>🔑 Silakan login menggunakan Internet Identity...</p>
+        <p>🔑 Please login using Internet Identity...</p>
       )}
     </div>
   );
